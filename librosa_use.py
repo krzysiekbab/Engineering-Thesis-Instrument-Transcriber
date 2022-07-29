@@ -8,6 +8,7 @@ from glob import glob
 from itertools import cycle
 import os
 import pandas as pd
+from playsound import playsound
 
 
 # sns.set_theme(style="white", palette=None)
@@ -47,12 +48,17 @@ class Audio:
         fig.colorbar(img, ax=ax, format="%+2.0f dB")
         plt.show()
 
+    def play_audio(self):
+        print(f"Playing {self.audio_name} ...")
+        playsound(f'Audio/{self.audio_name}')
+
 
 def main():
-    audio_files = glob('Audio/*')
-    audio_path = audio_files[6]
+    audio_files = np.sort(glob('Audio/*'))
+    print(audio_files)
+    audio_path = audio_files[4]
     audio_data, sr = librosa.load(audio_path)  # y - raw data of audio file, sr - sample rate of audio file
-    audio_name = audio_files[6][6:]
+    audio_name = audio_path[6:]
     print(f'Row data of audio file: {audio_name}')
     print(f'Sample rate (numer of samples in 1s): {sr}')
     print(f'Shape of audio data: {audio_data.shape}')
@@ -70,7 +76,16 @@ def main():
     audio_track.plot_spectrogram()
     audio_track.plot_mel_spectrogram()
 
+    # Play audio
+    audio_track.play_audio()
+
 
 if __name__ == "__main__":
     main()
+    # LIST OF TODOS:
 
+    # TODO 1. Create GUI
+    # TODO 2. Learn how to extract sounds from Spectrogram's
+    # TODO 3. Learn how to write sheetmusic in Python
+    # TODO 4. Learn how to generate pdfs in Python
+    # TODO 5. Learn how to generate exe file to start the application
