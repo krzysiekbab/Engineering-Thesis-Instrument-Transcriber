@@ -2,13 +2,18 @@ import matplotlib.pyplot as plt  # to plot
 import numpy as np
 from scipy.fft import fft, fftfreq, rfft, rfftfreq
 from scipy import signal
+import wave
+import os
+
+import librosa
+import librosa.display
 
 
-def generate_sine_wave(freq, sample_rate, duration):
+def generate_sine_wave(freq, sample_rate, duration, amplitude=1, phase=0):
     x = np.linspace(0, duration, int(sample_rate * duration), endpoint=False)
     frequencies = x * freq
     # 2pi because np.sin takes radians
-    y = np.sin((2 * np.pi) * frequencies)
+    y = amplitude * np.sin((2 * np.pi) * frequencies + phase)
     return x, y
 
 
@@ -121,7 +126,9 @@ def dtf_leakage():
     ax[1].grid()
     ax[1].set_xlabel("Częstotliwość [Hz]")
     ax[1].set_ylabel("Moduł wartości DFT")
-
+    plt.subplots_adjust(
+        bottom=0.1,
+        top=0.95)
     plt.show()
 
     # ---------------------------------------------------------------------------------
@@ -157,6 +164,9 @@ def dtf_leakage():
     ax[1].set_xlabel("Częstotliwość [Hz]")
     ax[1].set_ylabel("Moduł wartości DFT")
     ax[1].grid()
+    plt.subplots_adjust(
+        bottom=0.1,
+        top=0.95)
 
     plt.show()
 
@@ -179,6 +189,7 @@ def window_functions():
 
     number_of_zeros = 50
     number_of_filter = 200
+
     zeros = np.zeros(number_of_zeros)
     filter1 = np.zeros(number_of_zeros)
     filter2 = np.zeros(number_of_zeros)
@@ -196,25 +207,203 @@ def window_functions():
     filter3 = np.append(filter3, hanning_window)
     filter3 = np.append(filter3, zeros)
 
-    rec_2 = np.zeros(50)
-    rec_2 = np.append(rec_2, rec)
-    rec_2 = np.append(rec_2, zeros)
+    xscale = np.linspace(0, 3, 300)
 
     ax1.plot(x, y)
-    ax2.plot(rec_2)
+    ax2.plot(xscale, filter1)
     ax3.plot(x, np.multiply(filter1, y))
-    ax4.plot(trian)
+    ax4.plot(xscale, filter2)
     ax5.plot(x, np.multiply(filter2, y))
-    ax6.plot(hanning_window)
+    ax6.plot(xscale, filter3)
     ax7.plot(x, np.multiply(filter3, y))
 
+    axs = [ax1, ax2, ax3, ax4, ax5, ax6, ax7]
+    letters = ['a)', 'b)', 'c)', 'd)', 'e)', 'f)', 'g)']
+
+    for i, ax in enumerate(axs):
+        ax.set_xlabel("Czas [s]")
+        if i == 0:
+            ax.text(-0.07, 0.5, s=letters[i], transform=ax.transAxes, va='top', ha='right')
+        ax.text(-0.15, 0.5, s=letters[i], transform=ax.transAxes, va='top', ha='right')
+
+    # plt.tight_layout()
+    plt.subplots_adjust(left=0.1,
+                        bottom=0.05,
+                        right=0.9,
+                        top=0.95,
+                        wspace=0.3,
+                        hspace=0.3)
+    plt.show()
+
+
+def overlapping():
+    directory = os.getcwd()
+    audio_path = directory + '\Audio\\superstition.wav'
+    audio_data, sr = librosa.load(audio_path)
+
+    audio_data = audio_data[:88200]
+
+    x_scale = np.linspace(0, 4, sr * 4)
+
+    ones = np.hanning(sr)
+    zeros = np.zeros(sr)
+
+    # filter1 = np.concatenate((ones, zeros, zeros, zeros), axis=None)
+    # filter2 = np.concatenate((zeros, ones, zeros, zeros), axis=None)
+    # filter3 = np.concatenate((zeros, zeros, ones, zeros), axis=None)
+
+    filter1 = np.concatenate((zeros, ones, zeros, zeros), axis=None)
+    filter2 = np.concatenate((zeros, zeros, ones, zeros), axis=None)
+    filter3 = np.concatenate((zeros, zeros, zeros, ones), axis=None)
+
+    fig, ax = plt.subplots(4, 1, figsize=(10, 8))
+
+    # ax[0].text(-0.12, 0.5, s='a)', transform=ax[0].transAxes, va='top', ha='right')
+    # ax[0].legend(loc='upper right')
+    # ax[0].set_ylabel("Amplituda")
+    ax[0].plot(x_scale, audio_data)
+    ax[0].set_xlabel("Czas [s]")
+    ax[0].set_ylim(-1, 1)
+    ax[0].grid()
+
+    ax[1].plot(x_scale, np.multiply(audio_data, filter1))
+    ax[1].plot(x_scale, filter1, 'r')
+    ax[1].set_xlabel("Czas [s]")
+    ax[1].grid()
+
+    ax[2].plot(x_scale, np.multiply(audio_data, filter2))
+    ax[2].plot(x_scale, filter2, 'r')
+    ax[2].set_xlabel("Czas [s]")
+    ax[2].grid()
+
+    ax[3].plot(x_scale, np.multiply(audio_data, filter3))
+    ax[3].plot(x_scale, filter3, 'r')
+    ax[3].set_xlabel("Czas [s]")
+    ax[3].grid()
+
     plt.tight_layout()
+
+    plt.show()
+
+    # -------------------------------------------------------------------------------------------------------
+
+    filter1 = np.concatenate((zeros, ones, zeros, zeros), axis=None)
+    filter2 = np.concatenate((zeros, zeros[:11025], ones, zeros, zeros[:11025]), axis=None)
+    filter3 = np.concatenate((zeros, zeros, ones, zeros), axis=None)
+
+    # filter1 = np.concatenate((ones, zeros, zeros, zeros), axis=None)
+    # filter2 = np.concatenate((zeros[:11025], ones, zeros, zeros, zeros[:11025]), axis=None)
+    # filter3 = np.concatenate((zeros, ones, zeros, zeros), axis=None)
+
+    hop_size1 = np.linspace(1, 1.5, int(sr / 2))
+    hop_size2 = np.linspace(1.5, 2, int(sr / 2))
+
+    fig, ax = plt.subplots(4, 1, figsize=(10, 8))
+
+    ax[0].plot(x_scale, audio_data)
+    ax[0].set_xlabel("Czas [s]")
+    ax[0].set_ylim(-1, 1)
+    ax[0].grid()
+
+    ax[1].plot(x_scale, np.multiply(audio_data, filter1))
+    ax[1].plot(x_scale, filter1, 'r')
+    ax[1].set_xlabel("Czas [s]")
+    ax[1].grid()
+
+    ax[2].plot(x_scale, np.multiply(audio_data, filter2))
+    ax[2].plot(x_scale, filter2, 'r')
+    ax[2].plot(hop_size1, np.ones(int(sr / 2)) / 2, 'k')
+    ax[2].set_xlabel("Czas [s]")
+    ax[2].grid()
+
+    ax[2].annotate('długość skoku', xy=(0.95, 0.5), xytext=(0.25, 0.25),
+                   arrowprops=dict(facecolor='black', width=0.5, headwidth=5, headlength=5),
+                   )
+
+    ax[3].plot(x_scale, np.multiply(audio_data, filter3))
+    ax[3].plot(x_scale, filter3, 'r')
+    ax[3].plot(hop_size2, np.ones(int(sr / 2)) / 2, 'k')
+    ax[3].set_xlabel("Czas [s]")
+    ax[3].grid()
+
+    ax[3].annotate('długość skoku', xy=(1.45, 0.5), xytext=(0.75, 0.25),
+                   arrowprops=dict(facecolor='black', width=0.5, headwidth=5, headlength=5),
+                   )
+
+    plt.tight_layout()
+    plt.show()
+
+
+def fourier():
+    SAMPLE_RATE = 44100
+    DURATION = 1
+    FREQUENCY_1 = 5
+    FREQUENCY_2 = 20
+    FREQUENCY_3 = 50
+
+    x1, y1 = generate_sine_wave(FREQUENCY_1, SAMPLE_RATE, DURATION, amplitude=1)
+    _, y2 = generate_sine_wave(FREQUENCY_2, SAMPLE_RATE, DURATION, amplitude=0.5)
+    _, y3 = generate_sine_wave(FREQUENCY_3, SAMPLE_RATE, DURATION, amplitude=0.25)
+
+    N = SAMPLE_RATE * DURATION
+
+    yf = rfft(y1 + y2 + y3)
+    xf = rfftfreq(N, 1 / SAMPLE_RATE)
+    fig, ax = plt.subplots(2, 1, figsize=(10, 8))
+
+    ax[0].plot(x1, y1 + y2 + y3, 'g', label='sin(5Hz)+$\\frac{1}{2}$sin(20Hz)+$\\frac{1}{4}$sin(50Hz)')
+    ax[0].text(-0.12, 0.5, s='a)', transform=ax[0].transAxes, va='top', ha='right')
+    ax[0].legend(loc='upper right')
+    ax[0].set_xlabel("Czas [s]")
+    ax[0].set_ylabel("Amplituda")
+    ax[0].set_ylim(-2, 2.5)
+    ax[0].grid()
+
+    ax[1].stem(xf[:100], np.abs(yf)[:100], 'k', basefmt="-k",
+               label='widmo sygnału sin(5Hz)+$\\frac{1}{2}$sin(20Hz)+$\\frac{1}{4}$sin(50Hz)')
+    ax[1].text(-0.12, 0.5, s='b)', transform=ax[1].transAxes, va='top', ha='right')
+    ax[1].legend(loc='upper right')
+    ax[1].set_xlabel("Częstotliwość [Hz]")
+    ax[1].set_ylabel("Moduł wartości DFT")
+    ax[1].grid()
+
+    plt.subplots_adjust(
+        bottom=0.1,
+        top=0.95)
+
+    plt.show()
+
+
+def spectrogram():
+    directory = os.getcwd()
+    audio_path = directory + '\Audio\\superstition.wav'
+    audio_data, sr = librosa.load(audio_path)
+
+    audio_data = audio_data[:88200]
+    data_stft = np.abs(librosa.stft(audio_data))
+    data_stft_db = librosa.amplitude_to_db(data_stft)
+
+    fig, ax = plt.subplots(figsize=(8, 6))
+    # fig, ax = plt.subplots()
+
+    img = librosa.display.specshow(data_stft_db, x_axis='time', y_axis='log', ax=ax)
+    # ax.set_title(f"Power spectrogram\nFile:{self.audio_name}")
+    fig.colorbar(img, ax=ax, format="%+2.0f dB")
+    ax.set_xlabel("Czas [s]")
+    ax.set_ylabel("Częstotliwość [Hz]")
+
+    plt.subplots_adjust(
+        bottom=0.1,
+        top=0.95)
     plt.show()
 
 
 if __name__ == "__main__":
     # plot_quantization()
     # plot_aliasing()
-    # dtf_leakage2()
     # dtf_leakage()
-    window_functions()
+    # window_functions()
+    # overlapping()
+    # fourier()
+    # spectrogram()
+    pass
