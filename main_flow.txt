@@ -1,9 +1,0 @@
-1. Read audio file - in the beginning one piano note.
-2. Calculate a power spectrum of a given data using hamming window (Discrete Fourier Transform)
-    a) Hamming window to filter important data from these which have value close to 0
-        - as an argument hamming window takes length of a signal
-        - not sure if hamming is going to be implemented.
-    b) Calculate absolute value of transformed data to get rid of complex numbers
-    c) Reduce the signal by chosen ratio to focus on first few harmonics.
-3. Find Onsets in the signal:
-    a) Calculating the difference between
