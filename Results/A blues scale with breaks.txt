@@ -1,0 +1,30 @@
+Frame [ 0], Found frequency: 265.663 [Hz] is equal to C4
+Frame [ 1], Found frequency: 294.000 [Hz] is equal to D4
+Frame [ 2], Found frequency: 331.579 [Hz] is equal to E4
+Frame [ 3], Found frequency: 295.973 [Hz] is equal to D4
+Frame [ 4], Found frequency: 331.579 [Hz] is equal to E4
+Frame [ 5], Found frequency: 400.909 [Hz] is equal to G4
+Frame [ 6], Found frequency: 331.579 [Hz] is equal to E4
+Frame [ 7], Found frequency: 445.455 [Hz] is equal to A4
+Frame [ 8], Found frequency: 397.297 [Hz] is equal to G4
+Frame [ 9], Found frequency: 331.579 [Hz] is equal to E4
+Frame [10], Found frequency: 294.000 [Hz] is equal to D4
+Frame [11], Found frequency: 265.663 [Hz] is equal to C4
+Frame [12], Found frequency: 221.608 [Hz] is equal to A3
+Frame [13], Found frequency: 265.663 [Hz] is equal to C4
+Frame [14], Found frequency: 265.663 [Hz] is equal to C4
+Frame [15], Found frequency: 331.579 [Hz] is equal to E4
+Frame [16], Found frequency: 297.973 [Hz] is equal to D4
+Frame [17], Found frequency: 265.663 [Hz] is equal to C4
+Frame [18], Found frequency: 223.858 [Hz] is equal to A3
+Frame [19], Found frequency: 265.663 [Hz] is equal to C4
+Frame [20], Found frequency: 265.663 [Hz] is equal to C4
+Frame [21], Found frequency: 315.000 [Hz] is equal to D♯4
+Frame [22], Found frequency: 297.973 [Hz] is equal to D4
+Frame [23], Found frequency: 317.266 [Hz] is equal to D♯4
+Frame [24], Found frequency: 297.973 [Hz] is equal to D4
+Frame [25], Found frequency: 265.663 [Hz] is equal to C4
+Frame [26], Found frequency: 221.608 [Hz] is equal to A3
+Frame [27], Found frequency: 199.548 [Hz] is equal to G3
+Frame [28], Found frequency: 221.608 [Hz] is equal to A3
+Frame [29], Found frequency: 265.663 [Hz] is equal to C4
