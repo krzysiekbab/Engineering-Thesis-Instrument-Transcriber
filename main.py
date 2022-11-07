@@ -4,8 +4,9 @@ import librosa.display
 import matplotlib.pyplot as plt
 from playsound import playsound
 import os
-from constants import audio_names
+from constants import *
 from audio_classes import Audio, ProcessAudio
+import matplotlib.collections as collections
 
 """
 
@@ -82,54 +83,91 @@ def main():
     # audio_files = glob('Audio/*')
 
     directory = os.getcwd()
+    # audio_name = '\Audio\A blues scale with breaks.wav'
     audio_name = '\Audio\A blues scale.wav'
+
     audio_path = directory + audio_name
     audio_path = audio_path
     audio_file = Audio(audio_path=audio_path, audio_name=audio_name)
+    audio_length = audio_file.audio_data.shape[0]
 
-    print(f'Row data of audio file: {audio_file.audio_name}')
-    print(f'Sample rate (numer of samples in 1s): {audio_file.sr}')
-    print(f'Shape of audio data: {audio_file.audio_data.shape}')
+    # print(f'Row data of audio file: {audio_file.audio_name}')
+    # print(f'Sample rate (numer of samples in 1s): {audio_file.sr}')
+    # print(f'Shape of audio data: {audio_file.audio_data.shape}')
 
     # Play audio
     # audio_file.play_audio()
 
     process_audio = ProcessAudio(audio_file=audio_file)
     onsets = process_audio.detect_onsets()
-    # dividing signal into frames from onset to onset
-    onset_frames = process_audio.divide_into_onset_frames(onsets=onsets)
-    found_frequencies = []
-    # for count, frame in enumerate(onset_frames):
-    #     print(f"frame:{count}, {len(frame)}")
-    for onset_frame in onset_frames:
-        # dividing every onset_frame into smaller frames
-        frames = ProcessAudio.divide_onset_frame_into_smaller_frames(onset_frame)
-        f0_candidate = []
-        for frame in frames:
-            f0_freq = process_audio.find_f0_frequency(frame)
-            f0_candidate.append(f0_freq)
-        f0_freq = np.median(f0_candidate)
-        found_frequencies.append(f0_freq)
 
-    found_frequencies = np.array(found_frequencies)
+    # dividing signal into frames from onset to onset. Part of signals are returned not indexes
+    onset_frames = process_audio.divide_into_onset_frames(onsets=onsets)
+    indexes = np.insert(onsets, 0, 0)
+    indexes = np.insert(indexes, len(indexes), audio_length)
+
+    print(f"Liczba wykrytych onsetów: {len(onsets)}")
+    print(f"Liczba ramek onset_frames: {len(onset_frames)} (równa liczba onsetów)")
+    print(f"Liczba indeksów:{len(indexes)} (dodany indeks początkowy i końcowy)\n")
+
+    top_db = 30
+    first_frame = audio_file.audio_data[:onsets[0] - 1]
+
+    notes_durations, silences_durations = ProcessAudio.find_sound_and_silence_ranges(onset_frames=onset_frames,
+                                                                                     indexes=indexes, top_db=top_db)
+
+    # SHOWING RANGES OF SOUNDS
+    # for i in range(len(onset_frames)):
+    #     print(
+    #         f"Ramka[{i}]: ({indexes[i + 1]}:{indexes[i + 2]}),"
+    #         f"\tPoczątek dźwięku: {onsets[i]},"
+    #         f"\tDługość dźwięku: {notes_durations[i]},"
+    #         f"\tDługość ciszy: {silences_durations[i]}")
+
+    # -----------------------------------------------------------------------------------------------------------------
+
+    # plotting time slots where notes were played
+
+    # x = np.arange(0, audio_file.audio_data.shape[0])
+    # zeros = np.zeros(audio_file.audio_data.shape[0])
+    # fig, ax = plt.subplots()
+    #
+    # for sound in notes_durations:
+    #     first_idx, second_idx = sound
+    #     zeros[first_idx:second_idx] = 1
+    # collection = collections.BrokenBarHCollection.span_where(
+    #     x, ymin=0, ymax=np.abs(audio_file.audio_data).max(),
+    #     where=zeros > 0, facecolor='green',
+    #     label='Obszar występowania dźwięku')
+    # ax.add_collection(collection)
+    # ax.plot(audio_file.audio_data)
+    # ax.plot(audio_file.audio_data)
+    # ax.set_xlabel('Próbki')
+    # ax.set_ylabel('Amplituda')
+    # ax.set_title(f'Przedziały w których występują dźwięki (threshold = {top_db})')
+    # ax.legend()
+    # plt.show()
+
+    # -----------------------------------------------------------------------------------------------------------------
+
+    # Finding f0
+    found_frequencies = process_audio.find_frequencies(notes_durations=notes_durations)
     found_frequencies = found_frequencies.round(3)
+
+    # Changing from frequency to Music Notation
     found_notes = []
     for freq in found_frequencies:
         found_notes.append(librosa.hz_to_note(freq))
-    i = 0
+    # Printing results
     for i in range(len(found_frequencies)):
-        print(f"Found frequency: {found_frequencies[i]} [Hz] is equal to {found_notes[i]}")
-
-
-
+        print(f"Frame [{i:2}], Found frequency: {found_frequencies[i]:.3f} [Hz] is equal to {found_notes[i]}")
 
 
 if __name__ == "__main__":
     main()
     # LIST OF TODOS:
-
-    # TODO 1. Function of finding sound length
-    # TODO 2. Function of finding silence
+    # TODO 1: Change samples to time
+    # TODO 2:
     # TODO 3. librosa.onset.onset_detect - understand the flow
     # TODO 4. librosa.onset.onset_strength - understand the flow
     # TODO 5. Implement auto correlation method e. g. "librosa.yin" (try to write my own code)

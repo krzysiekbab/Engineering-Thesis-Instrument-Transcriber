@@ -40,7 +40,6 @@ class ProcessAudio:
         self.audio_file = audio_file
 
     def detect_onsets(self, units='samples'):
-        print(type(self.audio_file.audio_data))
         o_env = librosa.onset.onset_strength(y=self.audio_file.audio_data, sr=SAMPLE_RATE)
         onsets = librosa.onset.onset_detect(onset_envelope=o_env, sr=SAMPLE_RATE, units=units)
         return onsets
@@ -48,15 +47,12 @@ class ProcessAudio:
     def divide_into_onset_frames(self, onsets):
 
         framed_signal = []
-
-        # Adding first and last indexes to an array
-        extended_onset_list = np.insert(onsets, 0, 0)
-        extended_onset_list = np.insert(extended_onset_list, len(extended_onset_list),
-                                        self.audio_file.audio_data.shape[0])
-        for i in range(len(extended_onset_list) - 1):
-            framed_signal.append(
-                self.audio_file.audio_data[extended_onset_list[i]:extended_onset_list[i + 1] - 1])
-        return np.array(framed_signal)
+        for i in range(len(onsets)):
+            if i == len(onsets) - 1:
+                framed_signal.append(self.audio_file.audio_data[onsets[i]:self.audio_file.audio_data.shape[0]])
+            else:
+                framed_signal.append(self.audio_file.audio_data[onsets[i]:onsets[i + 1]])
+        return np.array(framed_signal, dtype=object)
 
     # static method umożliwia wywoływanie metod przez szablon klasy a nie przez instację klasy (np. ProcessAudio.divide_frame_into_smaller_frames)
 
@@ -88,7 +84,6 @@ class ProcessAudio:
         """
         Finding fundamental frequency of tested sound using cepstral analysis
         """
-
         min_freq, max_freq = freq_range
         start = int(sr / max_freq)
         end = int(sr / min_freq)
@@ -101,4 +96,33 @@ class ProcessAudio:
 
         return freq0
 
+    def find_frequencies(self, notes_durations):
+        found_frequencies = []
+        for i in range(len(notes_durations)):
+            first_idx, second_idx = notes_durations[i]
 
+            # dividing every onset_frame into smaller frames
+            frames = self.divide_onset_frame_into_smaller_frames(self.audio_file.audio_data[first_idx:second_idx])
+
+            f0_candidate = []
+            for frame in frames:
+                f0_freq = self.find_f0_frequency(frame)
+                f0_candidate.append(f0_freq)
+            f0_freq = np.median(f0_candidate)
+            found_frequencies.append(f0_freq)
+        return np.array(found_frequencies)
+
+    @staticmethod
+    def find_sound_and_silence_ranges(onset_frames, indexes, top_db):
+        note_duration = []
+        silence_duration = []
+        for i in range(len(onset_frames)):
+            onset_frame_splitted = librosa.effects.split(onset_frames[i], top_db=top_db) + indexes[i + 1]
+
+            sound = onset_frame_splitted[0]  # omijamy przypadek gdy wykrywa drugą wartość zwykle przed końcem ramki.
+            # Rozwiązuje to problemwzrastających wartości na końcu ramki
+
+            note_duration.append(sound)
+            silence = np.array([onset_frame_splitted[0][1], indexes[i + 2]])
+            silence_duration.append(silence)
+        return note_duration, silence_duration
