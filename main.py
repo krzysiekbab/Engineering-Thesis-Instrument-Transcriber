@@ -5,8 +5,10 @@ import matplotlib.pyplot as plt
 from playsound import playsound
 import os
 from constants import *
+from functions import *
 from audio_classes import Audio, ProcessAudio
 import matplotlib.collections as collections
+import music21
 
 """
 
@@ -66,115 +68,107 @@ import matplotlib.collections as collections
 #         ax.set_title(f"Mel Spectrogram\nFile: {self.audio_name}")
 #         fig.colorbar(img, ax=ax, format="%+2.0f dB")
 #         plt.show()
-#
-#     def plot_wave(self):
-#         plt.figure(figsize=(10, 5))
-#         librosa.display.waveshow(self.audio_data, alpha=0.5)
-#         plt.title(f"Waveplot of {self.audio_name}")
-#         plt.ylim(-1, 1)
-#         plt.show()
-#
-#     def play_audio(self):
-#         print(f"Playing {self.audio_name} ...")
-#         playsound(f'Audio/{self.audio_name}')
 
 
 def main():
-    # audio_files = glob('Audio/*')
-
+    # SET PATH OF AUDIO FILE
     directory = os.getcwd()
-    # audio_name = '\Audio\A blues scale with breaks.wav'
-    audio_name = '\Audio\A blues scale.wav'
+    audio_name = '\Audio\A blues scale with breaks.wav'
+    # audio_name = '\Audio\A blues scale.wav'
+    # audio_name = '\Audio\C ionian scale.wav'
+    # audio_name = '\Audio\\piano single notes\piano A4.wav'
 
     audio_path = directory + audio_name
     audio_path = audio_path
+
+    # CREATE INSTANCE OF "Audio" CLASS
     audio_file = Audio(audio_path=audio_path, audio_name=audio_name)
-    audio_length = audio_file.audio_data.shape[0]
+    onset_env = librosa.onset.onset_strength(y=audio_file.audio_data, sr=SAMPLE_RATE)
 
-    # print(f'Row data of audio file: {audio_file.audio_name}')
-    # print(f'Sample rate (numer of samples in 1s): {audio_file.sr}')
-    # print(f'Shape of audio data: {audio_file.audio_data.shape}')
-
-    # Play audio
-    # audio_file.play_audio()
-
+    # CREATE INSTANCE OF "ProcessAudio" CLASS
     process_audio = ProcessAudio(audio_file=audio_file)
     onsets = process_audio.detect_onsets()
 
-    # dividing signal into frames from onset to onset. Part of signals are returned not indexes
-    onset_frames = process_audio.divide_into_onset_frames(onsets=onsets)
+    # CREATE INDEX ARRAY (ONSETS WITH ADDED INDEXES OF FIRST AND LAST SAMPLE)
     indexes = np.insert(onsets, 0, 0)
-    indexes = np.insert(indexes, len(indexes), audio_length)
+    indexes = np.insert(indexes, len(indexes), audio_file.audio_data.shape[0])
 
-    print(f"Liczba wykrytych onsetów: {len(onsets)}")
-    print(f"Liczba ramek onset_frames: {len(onset_frames)} (równa liczba onsetów)")
-    print(f"Liczba indeksów:{len(indexes)} (dodany indeks początkowy i końcowy)\n")
+    # DIVIDE SIGNAL INTO FRAMES FROM ONSET TO ONSET; RETURNS PARTS OF SIGNAL
+    onset_frames = process_audio.divide_into_onset_frames(onsets=onsets)
 
-    top_db = 30
-    first_frame = audio_file.audio_data[:onsets[0] - 1]
+    # PICK TOP_DB VALUE
+    top_db = 30  # TODO rozwiącać problem gdy zwiększamy do 50 dB, i franctional prat ma stosunkowe małe wartości - rozw.: usuwać dźwięki których długość to 0.
 
-    notes_durations, silences_durations = ProcessAudio.find_sound_and_silence_ranges(onset_frames=onset_frames,
-                                                                                     indexes=indexes, top_db=top_db)
+    notes_duration_idx, silences_duration_idx = ProcessAudio.find_sound_and_silence_ranges(onset_frames=onset_frames,
+                                                                                           indexes=indexes,
+                                                                                           top_db=top_db)
 
-    # SHOWING RANGES OF SOUNDS
-    # for i in range(len(onset_frames)):
-    #     print(
-    #         f"Ramka[{i}]: ({indexes[i + 1]}:{indexes[i + 2]}),"
-    #         f"\tPoczątek dźwięku: {onsets[i]},"
-    #         f"\tDługość dźwięku: {notes_durations[i]},"
-    #         f"\tDługość ciszy: {silences_durations[i]}")
+    # PLOT TIME SLOTS WERE SOUND WERE IDENTIFIED
+    # process_audio.plot_notes_ranges(notes_durations=notes_duration_idx, top_db=top_db)
 
-    # -----------------------------------------------------------------------------------------------------------------
-
-    # plotting time slots where notes were played
-
-    # x = np.arange(0, audio_file.audio_data.shape[0])
-    # zeros = np.zeros(audio_file.audio_data.shape[0])
-    # fig, ax = plt.subplots()
-    #
-    # for sound in notes_durations:
-    #     first_idx, second_idx = sound
-    #     zeros[first_idx:second_idx] = 1
-    # collection = collections.BrokenBarHCollection.span_where(
-    #     x, ymin=0, ymax=np.abs(audio_file.audio_data).max(),
-    #     where=zeros > 0, facecolor='green',
-    #     label='Obszar występowania dźwięku')
-    # ax.add_collection(collection)
-    # ax.plot(audio_file.audio_data)
-    # ax.plot(audio_file.audio_data)
-    # ax.set_xlabel('Próbki')
-    # ax.set_ylabel('Amplituda')
-    # ax.set_title(f'Przedziały w których występują dźwięki (threshold = {top_db})')
-    # ax.legend()
-    # plt.show()
-
-    # -----------------------------------------------------------------------------------------------------------------
-
-    # Finding f0
-    found_frequencies = process_audio.find_frequencies(notes_durations=notes_durations)
+    # FIND F0 FREQUENCY
+    found_frequencies = process_audio.find_frequencies(notes_durations=notes_duration_idx)
     found_frequencies = found_frequencies.round(3)
 
-    # Changing from frequency to Music Notation
-    found_notes = []
-    for freq in found_frequencies:
-        found_notes.append(librosa.hz_to_note(freq))
-    # Printing results
-    for i in range(len(found_frequencies)):
-        print(f"Frame [{i:2}], Found frequency: {found_frequencies[i]:.3f} [Hz] is equal to {found_notes[i]}")
+    # CHANGE FREQUENCY TO MUSIC NAMES
+    found_notes = change_from_frequency_to_music_notation(found_frequencies)
+
+    # CREATE LENGTH ARRAYS IN SAMPLE AND TIME UNITS
+    _, _, notes_duration_times, silences_duration_times = create_duration_tables(notes_duration_idx,
+                                                                                 silences_duration_idx)
+    # PICK THE SHORTEST NOTE DURATION IN MUSIC21;
+    shortest_note = '1/32'
+
+    # ROUND NOTE & SILENCE DURATIONS TO MUSIC21 FORMAT; USE THE SHORTEST NOTE DURATION
+    notes_duration_times_music21 = change_duration_to_music21_format(duration_times=notes_duration_times,
+                                                                     shortest_note=shortest_note)
+    silences_duration_times_music21 = change_duration_to_music21_format(duration_times=silences_duration_times,
+                                                                        shortest_note=shortest_note)
+    # CREATE LIST OF TUPLES OF BOTH NOTES AND RESTS AND THEIR DURATIONS
+    music_representation = []
+    for i in range(len(found_notes)):
+        if notes_duration_times[i] != 0:
+            music_representation.append(tuple([found_notes[i], notes_duration_times_music21[i]]))
+        if silences_duration_times[i] != 0:
+            music_representation.append(tuple(["rest", silences_duration_times_music21[i]]))
+
+    print(f"Music representation ready for music21:\n")
+    for item in music_representation:
+        print(item)
+
+    # CREATE STREAM
+    stream1 = music21.stream.Stream()
+
+    # ADD TO STREAM ALL THE NOTES AND RESTS
+    create_notes_and_rests(music_representation, stream=stream1)
+
+    # PRINT STREAM IN MUSESCORE
+    stream1.show()
+
+    # WRITE SHEETMUSIC TO PDF WITHOUT OPENING MUSESCORE
+    # stream1.write('musicxml.pdf', input("Enter The Song Name (Add File Extension): "))
+
+    # stream1.show('text')
+    # stream2 = stream1.makeMeasures()
+    # stream2.show('text')
+    # fp = "D:\Studia\MusicApp\Sheetmusic")
+    # GEX = music21.musicxml.m21ToXml.Gener alObjectExporter()
+    # m = GEX.fromDiatonicScale(stream1)
+    # s = music21.converter.parse(stream1)
 
 
 if __name__ == "__main__":
     main()
     # LIST OF TODOS:
-    # TODO 1: Change samples to time
-    # TODO 2:
+
+    # TODO 0: Get rid of Audio class from main.py
+    # TODO 1. Write tempo function
+    # TODO 2. Write descriptions and hits of classes and methods in audio_classes.py
     # TODO 3. librosa.onset.onset_detect - understand the flow
     # TODO 4. librosa.onset.onset_strength - understand the flow
     # TODO 5. Implement auto correlation method e. g. "librosa.yin" (try to write my own code)
     # TODO 6. Write filtering function to use at the beginning of signal processing
     # TODO 7. Create scheme of the whole algorithm
-    # TODO 8. Learn how to write sheetmusic in Python
-    # TODO 9. Learn how to generate pdfs in Python
     # TODO 10. Learn how to generate .exe file to start the application
     # TODO 11. Create GUI
-    # TODO 12. Check working of function hz to note
+    # TODO 12. Check working of function hz to note by librosa

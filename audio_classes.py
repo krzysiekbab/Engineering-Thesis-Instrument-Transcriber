@@ -3,8 +3,8 @@ import librosa
 import librosa.display
 import matplotlib.pyplot as plt
 from playsound import playsound
-import os
 from constants import *
+import matplotlib.collections as collections
 
 
 class Audio:
@@ -36,7 +36,6 @@ class Audio:
 
 class ProcessAudio:
     def __init__(self, audio_file: Audio):
-        # audio_data zamiast wskazywać na plik z danych wskazuje na całą klasę Audio
         self.audio_file = audio_file
 
     def detect_onsets(self, units='samples'):
@@ -52,9 +51,8 @@ class ProcessAudio:
                 framed_signal.append(self.audio_file.audio_data[onsets[i]:self.audio_file.audio_data.shape[0]])
             else:
                 framed_signal.append(self.audio_file.audio_data[onsets[i]:onsets[i + 1]])
-        return np.array(framed_signal, dtype=object)
-
-    # static method umożliwia wywoływanie metod przez szablon klasy a nie przez instację klasy (np. ProcessAudio.divide_frame_into_smaller_frames)
+        # return np.array(framed_signal, dtype=object)
+        return framed_signal
 
     @staticmethod
     def divide_onset_frame_into_smaller_frames(data_frame, window_size=WINDOW_SIZE, hop_length=HOP_LENGTH):
@@ -126,3 +124,24 @@ class ProcessAudio:
             silence = np.array([onset_frame_splitted[0][1], indexes[i + 2]])
             silence_duration.append(silence)
         return note_duration, silence_duration
+
+    def plot_notes_ranges(self, notes_durations, top_db):
+        x = np.arange(0, self.audio_file.audio_data.shape[0])
+        zeros = np.zeros(self.audio_file.audio_data.shape[0])
+        fig, ax = plt.subplots()
+
+        for sound in notes_durations:
+            first_idx, second_idx = sound
+            zeros[first_idx:second_idx] = 1
+        collection = collections.BrokenBarHCollection.span_where(
+            x, ymin=0, ymax=np.abs(self.audio_file.audio_data).max(),
+            where=zeros > 0, facecolor='green',
+            label='Obszar występowania dźwięku')
+        ax.add_collection(collection)
+        ax.plot(self.audio_file.audio_data, color="#ffa500")
+        ax.set_xlabel('Próbki')
+        ax.set_ylabel('Amplituda')
+        ax.set_title(f'Przedziały występowania dźwięków (threshold = {top_db})')
+        ax.legend()
+        plt.show()
+
