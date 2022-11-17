@@ -3,6 +3,7 @@ import numpy as np
 from scipy.fft import fft, fftfreq, rfft, rfftfreq
 from scipy import signal
 import wave
+import scipy as sp
 import os
 
 import librosa
@@ -398,6 +399,42 @@ def spectrogram():
     plt.show()
 
 
+def plot_harmonics():
+    SAMPLE_RATE = 44100
+    directory = os.getcwd()
+    audio_name = '\Audio\piano single notes\piano A4.wav'
+    audio_path = directory + audio_name
+
+    y, _ = librosa.load(path=audio_path, sr=SAMPLE_RATE)
+
+    ft = sp.fft.fft(y)
+    magnitude = np.absolute(ft)
+    print(len(magnitude))
+    frequency = np.linspace(0, SAMPLE_RATE, len(magnitude))
+    print(len((frequency)))
+    fig, ax = plt.subplots(2, 1, figsize=(10, 8))
+    #
+    librosa.display.waveshow(y[15000:], sr=SAMPLE_RATE, ax=ax[0], label='Dźwięk A4, f=440 [Hz]')
+    ax[0].text(-0.12, 0.5, s='a)', transform=ax[0].transAxes, va='top', ha='right')
+    ax[0].legend(loc='upper right')
+    ax[0].set_xlabel("Czas [s]")
+    ax[0].set_ylabel("Amplituda")
+    ax[0].grid()
+
+    ax[1].plot(frequency[:8000], magnitude[:8000], label="Widmo Fouriera dźwięku A4, f=440 [Hz]")
+    ax[1].text(-0.12, 0.5, s='b)', transform=ax[1].transAxes, va='top', ha='right')
+    ax[1].legend(loc='upper right')
+    ax[1].set_xlabel("Częstotliwość [Hz]")
+    ax[1].set_ylabel("Moduł wartości DFT")
+    ax[1].grid()
+
+    plt.subplots_adjust(
+        bottom=0.1,
+        top=0.95)
+
+    plt.show()
+
+
 if __name__ == "__main__":
     # plot_quantization()
     # plot_aliasing()
@@ -406,4 +443,6 @@ if __name__ == "__main__":
     # overlapping()
     # fourier()
     # spectrogram()
+    plot_harmonics()
+
     pass
