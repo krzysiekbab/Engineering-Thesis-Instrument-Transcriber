@@ -1,0 +1,30 @@
+1. Napisać o przetestowaniu wszystkich dźwięków pianina oraz saksofonu.
+    a) napisać skujteczność wykrycia tonu podstawowego
+2. Zrobić analizę utworu Autumn Leaves zagranego na pianinie oraz saksofonie. Ścieżki muszą być zagrane dokładnie sak samo żeby mieć miarodajne wyniki
+    a) wstawić wykresy występowania nut
+3. Wpływ tresholda na wygląd końcowych nut - porównanie wykresów dla tresholda 30 oraz 60.
+4. Wpływ parametru shortest_note na wygląd końcowych nut.
+5. Ilość wykrytych nut metodą onset detect
+
+
+
+Usuń onsety jeśli:
+1. odległości między ramkami są < 10 (wybierz ten o największej amplitudzie)
+2. Amplituda jest mniejsza niż połowa średniej wszystkich onsetów lub 2 sąsiednich.
+
+Przy usuwaniu onsetów gdy amplituda jest mniejsza niż połowa średniej dwóch sąsiednich amplitud
+    - usunał 4 dobre nuty
+    - usunął 3 złe nuty
+
+    Ogólny bilans na -
+
+Przy usuwaniu onsetów gdy amplituda jest mniejsza niż średniej wszystkich amplitud
+    - usunał 7 dobre nuty
+    - usunął 3 złe nuty
+
+    Ogólny bilans na --
+
+
+Jak do tej pory najlepsza dla saksofonu jest filtracja filtracja medianowa i wyciszenie początkowe
+wszystkich dźwięków o wartość top db=30 dB. Dzięki wyciszeniu dwięków unikamy konieczności stosowania
+elimacji amplitudowej opartej o średnią( Jest to wręcz niewskazane)
