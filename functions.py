@@ -59,18 +59,16 @@ def choose_shortest_note_length(length):
     return durations_music_21
 
 
-def change_duration_to_music21_format(duration_times, shortest_note='1/16'):
+def change_to_music21_format(duration_times, shortest_note='1/16'):
     note_lengths = choose_shortest_note_length(length=shortest_note)
     duration_times_music21 = []
     for elem in duration_times:
-        single_digit = [d for d in str(elem)]  # rozdzielam na pojedyncze znaki
-        first_part = "".join(single_digit[:2])  # miejsca przed rzecinkiem
-        second_part = "".join(single_digit[2:])  # miejsca po przcinku
+        first_part, second_part = str(elem).split(".")
         second_part = "0." + second_part
-        idx = np.abs(note_lengths - float(second_part)).argmin()  # znajdowanie najbliższej wartości z tablicy
-        second_part = str(note_lengths[idx])[2:]
-        duration = float(first_part + second_part)
-        duration_times_music21.append(duration)
+        index = np.abs(note_lengths - float(second_part)).argmin()
+        second_part = str(note_lengths[index])[2:]
+        music21_duration = float(first_part + "." + second_part)
+        duration_times_music21.append(music21_duration)
     return duration_times_music21
 
 
@@ -83,9 +81,13 @@ def create_notes_and_rests(music_notes, stream):
             note1.duration.quarterLength = note[1]
             stream.append(note1)
     return stream
-# print(choose_shortest_note_length("Thirty-second"))
 
 
+def time_to_beat(duration, tempo):
+    return tempo * duration / 60
+
+def record_audio():
+    pass
 # tempo = librosa.beat.tempo(onset_envelope=onset_env, sr=SAMPLE_RATE)
 # print(f"Tempo: {tempo}")
 # def time_to_beat(duration, tempo):

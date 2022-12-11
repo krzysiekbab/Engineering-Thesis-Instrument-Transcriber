@@ -8,6 +8,8 @@ import os
 
 import librosa
 import librosa.display
+import matplotlib.collections as collections
+from constants import SAMPLE_RATE, FREQUENCY_RANGE
 
 
 def generate_sine_wave(freq, sample_rate, duration, amplitude=1, phase=0):
@@ -400,28 +402,34 @@ def spectrogram():
 
 
 def plot_harmonics():
-    SAMPLE_RATE = 44100
     directory = os.getcwd()
-    audio_name = '\Audio\piano single notes\piano A4.wav'
-    audio_path = directory + audio_name
+    audio_name_piano = '\Audio\piano\single notes\piano A4.wav'
+    audio_name_sax = '\Audio\sax\single notes\sax F#2.wav'
 
-    y, _ = librosa.load(path=audio_path, sr=SAMPLE_RATE)
+    audio_path_piano = directory + audio_name_piano
+    audio_path_sax = directory + audio_name_sax
 
-    ft = sp.fft.fft(y)
-    magnitude = np.absolute(ft)
-    print(len(magnitude))
-    frequency = np.linspace(0, SAMPLE_RATE, len(magnitude))
-    print(len((frequency)))
+    y_sax, _ = librosa.load(path=audio_path_sax, sr=SAMPLE_RATE)
+    y_piano, _ = librosa.load(path=audio_path_piano, sr=SAMPLE_RATE)
+
+    ft_sax = sp.fft.fft(y_sax)
+    magnitude_sax = np.absolute(ft_sax)
+    frequency_sax = np.linspace(0, SAMPLE_RATE, len(magnitude_sax))
+
+    ft_piano = sp.fft.fft(y_piano)
+    magnitude_piano = np.absolute(ft_piano)
+    frequency_piano = np.linspace(0, SAMPLE_RATE, len(magnitude_piano))
+
     fig, ax = plt.subplots(2, 1, figsize=(10, 8))
-    #
-    librosa.display.waveshow(y[15000:], sr=SAMPLE_RATE, ax=ax[0], label='Dźwięk A4, f=440 [Hz]')
+
+    ax[0].plot(frequency_piano[:8000], magnitude_piano[:8000], label="Widmo Fouriera dźwięku A4 (pianino)")
     ax[0].text(-0.12, 0.5, s='a)', transform=ax[0].transAxes, va='top', ha='right')
     ax[0].legend(loc='upper right')
-    ax[0].set_xlabel("Czas [s]")
-    ax[0].set_ylabel("Amplituda")
+    ax[0].set_xlabel("Częstotliwość [Hz]")
+    ax[0].set_ylabel("Moduł wartości DFT")
     ax[0].grid()
 
-    ax[1].plot(frequency[:8000], magnitude[:8000], label="Widmo Fouriera dźwięku A4, f=440 [Hz]")
+    ax[1].plot(frequency_sax[:8000], magnitude_sax[:8000], label="Widmo Fouriera dźwięku A4 (saksofon altowy)")
     ax[1].text(-0.12, 0.5, s='b)', transform=ax[1].transAxes, va='top', ha='right')
     ax[1].legend(loc='upper right')
     ax[1].set_xlabel("Częstotliwość [Hz]")
@@ -435,6 +443,251 @@ def plot_harmonics():
     plt.show()
 
 
+def plot_spectral_flux():
+    directory = os.getcwd()
+    audio_name = '\Audio\piano\A blues scale.wav'
+
+    top_db = 30
+    audio_path = directory + audio_name
+    audio_path = audio_path
+    y, sr = librosa.load(audio_path, SAMPLE_RATE)
+    y = y[320000:550000]
+    o_env = librosa.onset.onset_strength(y, sr=sr, aggregate=np.mean)
+    times = librosa.times_like(o_env, sr=sr)
+    onset_frames = librosa.onset.onset_detect(onset_envelope=o_env, sr=sr)
+    print("onset frames:\n", onset_frames)
+
+    fig, ax = plt.subplots(nrows=2, sharex=True)
+    librosa.display.waveshow(y, ax=ax[0], sr=sr, label='Sygnał wejściowy')
+    # ax[0].set_xlabel("Czas [s]")
+    ax[0].legend(prop={'size': 8})
+    ax[0].set_xlabel("")
+    # ax[0].text(-0.1, 0.5, s='a)', transform=ax[0].transAxes, va='top', ha='right')
+    ax[1].plot(times, o_env, label='Onset strength')
+    ax[1].vlines(times[onset_frames], 0, o_env.max(), color='r', alpha=0.9,
+                 linestyle='--', label='Wykryte miejsca'
+                                       '')
+    # ax[1].text(-0.1, 0.5, s='b)', transform=ax[1].transAxes, va='top', ha='right')
+    ax[1].legend(prop={'size': 8})
+    ax[1].set_xlabel("Czas [s]")
+    #
+    # plt.subplots_adjust(
+    #     bottom=0.1,
+    #     top=0.95)
+    plt.show()
+
+
+def plot_f0_detection_steps():
+    directory = os.getcwd()
+    audio_name_piano = '\Audio\piano\single notes\piano A4.wav'
+
+    audio_path_piano = directory + audio_name_piano
+
+    # ax[0, 0] data
+    signal, sr = librosa.load(path=audio_path_piano, sr=SAMPLE_RATE)
+    frame_size = signal.shape[0]
+    # ax[0, 1] data
+    dt = 1 / sr
+    freq_vector = np.fft.rfftfreq(frame_size, d=dt)
+    windowed_signal = np.hamming(frame_size) * signal
+    X = np.abs(np.fft.rfft(windowed_signal) / signal.shape[0])
+    log_X = np.log(X)
+    #
+    df = freq_vector[1] - freq_vector[0]
+    cepstrum = np.fft.rfft(log_X)
+    # cepstrum = np.fft.rfft(X)
+
+    quefrency_vector = np.fft.rfftfreq(log_X.size, df)
+
+    # -----------------------------------------------------------------------------------------
+    fig, ax = plt.subplots(2, 2, figsize=(12, 10))
+
+    librosa.display.waveshow(signal, ax=ax[0, 0], sr=SAMPLE_RATE, label='x(t)')
+    # ax[0, 0].legend(prop={'size': 8})
+    # ax[0, 0].set_xlabel("")
+    # ax[0, 0].text(-0.12, 0.5, s='a)', transform=ax[0, 0].transAxes, va='top', ha='right')
+    ax[0, 0].legend(loc='upper right')
+    ax[0, 0].set_xlabel("Czas [s]")
+    ax[0, 0].grid()
+    ax[0, 0].set_title('Analizowany sygnał')
+    # ax[0, 0].set_ylabel("Moduł wartości DFT")
+
+    ax[0, 1].plot(freq_vector[:8000], X[:8000], label="|X(f)|")
+    # ax[0, 1].text(-0.12, 0.5, s='b)', transform=ax[0, 1].transAxes, va='top', ha='right')
+    ax[0, 1].legend(loc='upper right')
+    ax[0, 1].set_xlabel("Częstotliwość [Hz]")
+    ax[0, 1].set_title('Widmo sygnału')
+    ax[0, 1].grid()
+
+    ax[1, 0].plot(freq_vector[:8000], log_X[:8000], label="ln|X(f)|")
+    # ax[1, 0].text(-0.12, 0.5, s='c)', transform=ax[1, 0].transAxes, va='top', ha='right')
+    ax[1, 0].legend(loc='upper right')
+    ax[1, 0].set_xlabel("Częstotliwość [Hz]")
+    ax[1, 0].set_title('Logarytmiczne widmo sygnału')
+    ax[1, 0].grid()
+
+    fmin, fmax = 50, 2500
+    valid = (quefrency_vector > 1 / fmax) & (quefrency_vector <= 1 / fmin)
+    # collection = collections.BrokenBarHCollection.span_where(
+    #     quefrency_vector, ymin=0, ymax=np.abs(cepstrum).max(), where=valid, facecolor='green', alpha=0.5,
+    #     label='valid pitches')
+
+    ax[1, 1].plot(quefrency_vector, np.abs(cepstrum), label="c(x(t))")
+    ax[1, 1].vlines(1 / 450, 0, np.max(np.abs(cepstrum)), alpha=.4, lw=3, label='znalezione f0', color='r')
+    # ax[1, 1].add_collection(collection)
+    # ax[1, 1].text(-0.1, 0.5, s='d)', transform=ax[1, 1].transAxes, va='top', ha='right')
+    ax[1, 1].legend(loc='upper right')
+    ax[1, 1].set_xlabel("Czas [s]")
+    ax[1, 1].set_title('Cepstrum')
+    ax[1, 1].grid()
+
+    ax[1, 1].set_xlim(15 / 10000, 30 / 10000)
+    ax[1, 1].set_ylim(0, 5000)
+
+    plt.subplots_adjust(
+        bottom=0.05,
+        top=0.95,
+        left=0.05,
+        right=0.95)
+
+    plt.show()
+
+
+def plot_cepstrum():
+    directory = os.getcwd()
+    audio_name_piano = '\Audio\piano\single notes\piano A4.wav'
+
+    audio_path_piano = directory + audio_name_piano
+
+    y, sr = librosa.load(path=audio_path_piano, sr=SAMPLE_RATE)
+
+    dt = 1 / sr
+    freq_vector = np.fft.rfftfreq(y.shape[0], d=dt)  # size = 44100
+    df = freq_vector[1] - freq_vector[0]
+    X = np.abs(np.fft.rfft(y))
+
+    quefrency_vector = np.fft.rfftfreq(y.shape[0], df)
+    print(quefrency_vector)
+    print(len(quefrency_vector))
+    spectrum = np.fft.fft(y)
+    log_spectrum = np.log(np.abs(spectrum))
+    cepstrum = np.fft.ifft(log_spectrum).real
+
+    min_freq, max_freq = FREQUENCY_RANGE
+    start = int(sr / max_freq)
+    end = int(sr / min_freq)
+    narrowed_cepstrum = cepstrum[start:end]
+    peak_ix = narrowed_cepstrum.argmax()
+    freq0 = sr / (start + peak_ix)
+    f0_inv = 1 / freq0
+
+    cepstrum = cepstrum[:44101]
+
+    narrowed_quefrency = []
+    for q in quefrency_vector:
+        if (q > 1 / max_freq) & (q <= 1 / min_freq):
+            narrowed_quefrency.append(q)
+
+    fig, ax = plt.subplots(2, 1, figsize=(10, 8))
+    ax[0].plot(quefrency_vector, np.abs(cepstrum))
+    ax[0].vlines(f0_inv, 0, np.max(np.abs(cepstrum)), lw=2, label='f0', color='r')
+    ax[0].legend(loc='upper right')
+    ax[0].set_xlabel("Quefrency [s]")
+
+    ax[1].plot(narrowed_quefrency, np.abs(narrowed_cepstrum))
+    ax[1].vlines(f0_inv, 0, np.max(np.abs(narrowed_cepstrum)), lw=2, label='f0', color='r')
+    ax[1].legend(loc='upper right')
+    ax[1].set_xlabel("Quefrency [s]")
+
+    plt.show()
+
+
+def plot_detected_and_real_onsets():
+    directory = os.getcwd()
+    # audio_name = '\Audio\piano\C ionian scale.wav'
+    # audio_name = '\Audio\sax\\autumn leaves high(150 bpm).wav'
+    # audio_name = '\Audio\sax\\C ionian scale sax.wav'
+    audio_name = '\Audio\sax\\F# blues scale sax.wav'
+
+    audio_path = directory + audio_name
+    audio_path = audio_path
+    y, sr = librosa.load(audio_path, SAMPLE_RATE)
+
+    y, sr = librosa.load(audio_path, SAMPLE_RATE)
+    # %%
+    top_db = 30
+    y_2 = np.zeros(y.shape[0])
+    y_splitted = librosa.effects.split(y, top_db=top_db)
+    for sound in y_splitted:
+        start_idx = sound[0]
+        end_idx = sound[1]
+        y_2[start_idx:end_idx] = y[start_idx:end_idx]
+
+    D = np.abs(librosa.stft(y))
+    fig, ax = plt.subplots(nrows=2, figsize=(16, 6), sharex=True)
+
+    real_onsets_times = [0.5, 0.832, 1.02, 1.326, 1.508, 1.787, 2.0, 2.284, 2.77, 3.287, 3.745, 4.0, 4.282, 4.464,
+                         4.793,
+                         5.32, 5.77, 6.0,
+                         6.28, 6.46, 6.77, 7.268, 7.768, 7.955, 8.131, 8.278, 8.5, 8.8, 8.96, 9.29]
+    real_onsets_frames = librosa.time_to_frames(real_onsets_times, sr=sr)
+    #
+    o_env = librosa.onset.onset_strength(y_2, sr=sr, aggregate=np.median)
+
+    times = librosa.times_like(o_env, sr=sr)
+    onset_frames = librosa.onset.onset_detect(onset_envelope=o_env, sr=sr)
+    onset_frames = list(onset_frames)
+    times_of_onsets = librosa.frames_to_time(onset_frames, sr=sr)
+
+    def filter_onset(onset_frames):
+        print(f"Detected onset frames: (len: {len(onset_frames)})\n", onset_frames)
+        onset_frames = np.array(onset_frames)
+        distance_list = []
+        amplitudes = o_env[onset_frames]
+        deleted_frames = []
+        for i in range(len(onset_frames) - 1):
+            distance = onset_frames[i + 1] - onset_frames[i]
+            distance_list.append(distance)
+        len_of_onset_frames = len(onset_frames) - 1
+        for i in range(len_of_onset_frames):
+            if distance_list[i] < 10:
+                if amplitudes[i + 1] > amplitudes[i]:
+                    deleted_frames.append(onset_frames[i])
+                else:
+                    deleted_frames.append(onset_frames[i + 1])
+        print(deleted_frames)
+        new_onsets = np.setdiff1d(onset_frames, deleted_frames)
+        removed_indexes = []
+        for i in range(1, len(new_onsets) - 2):
+            if o_env[new_onsets[i]] < np.mean(o_env[new_onsets[i - 1:i + 2]]) / 2:
+                removed_indexes.append(i)
+        # print(f"New onset frames: (len: {len(new_onsets)})\n", new_onsets)
+        # print(f"mean_removed: (len: {len(removed_indexes)})\n", removed_indexes)
+
+        return new_onsets, deleted_frames, removed_indexes
+
+    new_onsets, deleted_frames, removed = filter_onset(onset_frames)
+    new_onsets = np.array(new_onsets)
+    new_amplitudes = o_env[new_onsets]
+    final_onsets = np.delete(new_onsets, removed)
+
+    ax[0].plot(times, o_env, label='Onset strength')
+    # ax[0].vlines(times[onset_frames], 0, o_env.max(), color='r', alpha=0.9, linestyle='--', label='Onsets')
+    ax[0].vlines(times[final_onsets], 0, o_env.max(), color='r', alpha=0.9, linestyle='--', label='Final Onsets')
+
+    # ax[0].vlines(times[real_onsets_frames], 0, o_env.max(), color='k', alpha=0.9, linestyle='--', label='Real Onsets')
+    ax[0].legend()
+    ax[0].set_xlabel("Czas [s]")
+
+    ax[1].plot(times, o_env, label='Onset strength')
+    ax[1].vlines(times[new_onsets], 0, o_env.max(), color='r', alpha=0.9, linestyle='--', label='New onsets')
+    # ax[1].vlines(times[real_onsets_frames], 0, o_env.max(), color='k', alpha=0.9, linestyle='--', label='Real onsets')
+    ax[1].legend()
+    ax[1].set_xlabel("Czas [s]")
+
+    plt.show()
+
+
 if __name__ == "__main__":
     # plot_quantization()
     # plot_aliasing()
@@ -443,6 +696,8 @@ if __name__ == "__main__":
     # overlapping()
     # fourier()
     # spectrogram()
-    plot_harmonics()
-
+    # plot_harmonics()
+    # plot_spectral_flux()
+    # plot_f0_detection_steps()
+    # plot_cepstrum()
     pass

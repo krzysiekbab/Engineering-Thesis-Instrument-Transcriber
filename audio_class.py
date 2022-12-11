@@ -10,7 +10,7 @@ import os
 
 class Audio:
     """
-    Class representing Audio file with basic methods
+    Klasa reprezentująca ścieżkę dźwiękową
     """
 
     def __init__(self, audio_path: str, audio_name: str):
@@ -18,7 +18,61 @@ class Audio:
         self.audio_name = audio_name
         self.audio_data = None
         self.sr = None
+        self.audio_data_filtered = None
+        self.onsets = None
+        self.envelope = None
+        self.hop_length = HOP_LENGTH
+
         self.load_audio()
+
+    def filter_audio(self, top_db):
+        sound_ranges = librosa.effects.split(self.audio_data, top_db=top_db)
+        self.audio_data_filtered = np.zeros(len(self.audio_data))
+        for sound in sound_ranges:
+            start_idx = sound[0]
+            end_idx = sound[1]
+            self.audio_data_filtered[start_idx:end_idx] = self.audio_data[start_idx:end_idx]
+
+    def filter_onsets(self):
+        distance_list = []
+        print(self.onsets)
+        onset_frames = librosa.samples_to_frames(self.onsets, hop_length=self.hop_length)
+
+        amplitudes = self.envelope[onset_frames]
+        deleted_frames = []
+        """Measuring distance in samples between frames"""
+        for i in range(len(onset_frames) - 1):
+            distance = onset_frames[i + 1] - onset_frames[i]
+            distance_list.append(distance)
+        """Deleting onsets which occurs to close to other"""
+        for i in range(len(onset_frames) - 1):
+            if distance_list[i] < 10:
+                if amplitudes[i + 1] > amplitudes[i]:
+                    deleted_frames.append(onset_frames[i])
+                else:
+                    deleted_frames.append(onset_frames[i + 1])
+        new_onsets = np.setdiff1d(onset_frames, deleted_frames)
+        removed_indexes = []
+        """Deleting onsets which amplitude is less than mean of 3 next samples amplitudes divided by 2"""
+        for i in range(1, len(new_onsets) - 2):
+            if self.envelope[new_onsets[i]] < np.mean(self.envelope[new_onsets[i - 1:i + 2]]) / 2:
+                removed_indexes.append(i)
+        new_onsets = librosa.frames_to_samples(new_onsets, hop_length=self.hop_length)
+        final_onsets = np.delete(new_onsets, removed_indexes)
+        # TODO: Above for loop unused.
+        self.onsets = new_onsets
+
+
+    def detect_onsets(self, units='samples', aggregate=np.median):
+        o_env = librosa.onset.onset_strength(y=self.audio_data_filtered, sr=SAMPLE_RATE, aggregate=aggregate)
+        onsets = librosa.onset.onset_detect(onset_envelope=o_env, sr=SAMPLE_RATE, units=units)
+        self.onsets = onsets
+        self.envelope = o_env
+        return onsets
+
+    def estimate_tempo(self):
+        tempo = librosa.beat.tempo(onset_envelope=self.envelope, sr=self.sr)
+        return tempo
 
     def load_audio(self):
         self.audio_data, self.sr = librosa.load(path=self.audio_path, sr=SAMPLE_RATE)
@@ -27,36 +81,33 @@ class Audio:
         print(f"Playing {self.audio_name} ...")
         playsound(self.audio_path)
 
-    def detect_onsets(self, units='samples'):
-        o_env = librosa.onset.onset_strength(y=self.audio_data, sr=SAMPLE_RATE)
-        onsets = librosa.onset.onset_detect(onset_envelope=o_env, sr=SAMPLE_RATE, units=units)
-        return onsets
-
     def divide_into_onset_frames(self, onsets):
 
         framed_signal = []
         for i in range(len(onsets)):
             if i == len(onsets) - 1:
-                framed_signal.append(self.audio_data[onsets[i]:self.audio_data.shape[0]])
+                framed_signal.append(self.audio_data[onsets[i]:
+                                                     self.audio_data.shape[0]])
             else:
-                framed_signal.append(self.audio_data[onsets[i]:onsets[i + 1]])
+                framed_signal.append(self.audio_data[onsets[i]:
+                                                     onsets[i + 1]])
         return framed_signal
 
-    def find_sound_and_silence_ranges(self, onset_frames, onsets, top_db):
-        note_duration = []
-        silence_duration = []
-        indexes = np.insert(onsets, 0, 0)
-        indexes = np.insert(indexes, len(indexes), self.audio_data.shape[0])
+    def find_durations(self, onset_frames, onsets, top_db):
+        note_durations = []
+        rest_durations = []
         for i in range(len(onset_frames)):
-            onset_frame_splitted = librosa.effects.split(onset_frames[i], top_db=top_db) + indexes[i + 1]
+            split_frame = librosa.effects.split(onset_frames[i], top_db=top_db) + onsets[i]
+            sound = split_frame[0]
+            if i == len(onset_frames) - 1:
+                silence = np.array([split_frame[0][1], self.audio_data.shape[0]])
+            else:
+                silence = np.array([split_frame[0][1], onsets[i + 1]])
 
-            sound = onset_frame_splitted[0]  # omijamy przypadek gdy wykrywa drugą wartość zwykle przed końcem ramki.
-            # Rozwiązuje to problemwzrastających wartości na końcu ramki
+            note_durations.append(sound)
+            rest_durations.append(silence)
 
-            note_duration.append(sound)
-            silence = np.array([onset_frame_splitted[0][1], indexes[i + 2]])
-            silence_duration.append(silence)
-        return note_duration, silence_duration
+        return note_durations, rest_durations
 
     @staticmethod
     def divide_onset_frame_into_smaller_frames(data_frame, window_size=WINDOW_SIZE, hop_length=HOP_LENGTH):
@@ -64,7 +115,7 @@ class Audio:
         if len(data_frame) <= window_size:
             window_size = int(window_size / 4)
             # hop_length = int(hop_length / 4)
-        if len(data_frame) <= 2*window_size:
+        if len(data_frame) <= 2 * window_size:
             window_size = int(window_size / 2)
             # hop_length = int(hop_length / 2)
 
@@ -75,44 +126,43 @@ class Audio:
         return windowed_frames
 
     @staticmethod
-    def calc_cepstrum(data):
+    def calc_cepstrum(frame):
         """
         Calculates the complex cepstrum of a real sequence.
         """
-        spectrum = np.fft.fft(data)
+        spectrum = np.fft.fft(frame)
         log_spectrum = np.log(np.abs(spectrum))
         cepstrum = np.fft.ifft(log_spectrum).real
         return cepstrum
 
-    def find_f0_frequency(self, data_frame, sr=SAMPLE_RATE, freq_range=FREQUENCY_RANGE):
-        cepstrum = self.calc_cepstrum(data_frame)
+    def find_f0_frequency(self, frame):
         """
         Finding fundamental frequency of tested sound using cepstral analysis
         """
-        min_freq, max_freq = freq_range
-        start = int(sr / max_freq)
-        end = int(sr / min_freq)
+        cepstrum = self.calc_cepstrum(frame)
+        min_freq, max_freq = FREQUENCY_RANGE
+        start = int(self.sr / max_freq)
+        end = int(self.sr / min_freq)
         narrowed_cepstrum = cepstrum[start:end]
         peak_ix = narrowed_cepstrum.argmax()
-        freq0 = sr / (start + peak_ix)
+        freq0 = self.sr / (start + peak_ix)
 
         if freq0 < min_freq or freq0 > max_freq:
-            return 0
-
+            return None
         return freq0
 
-    def find_frequencies(self, notes_durations):
+    def find_frequencies(self, note_frames):
         found_frequencies = []
-        for i in range(len(notes_durations)):
-            first_idx, second_idx = notes_durations[i]
-
-            # dividing every onset_frame into smaller frames
-            frames = self.divide_onset_frame_into_smaller_frames(self.audio_data[first_idx:second_idx])
+        for n_frame in note_frames:
+            small_frames = librosa.util.frame(n_frame, frame_length=WINDOW_SIZE,
+                                              hop_length=HOP_LENGTH, axis=0)
+            small_frames = np.hanning(WINDOW_SIZE) * small_frames
             f0_candidate = []
-            for frame in frames:
-                f0_freq = self.find_f0_frequency(frame)
-                f0_candidate.append(f0_freq)
-            # print(f"Frame[{i}], len={len(f0_candidate)}", np.sort(f0_candidate))
+
+            for s_frame in small_frames:
+                f0_freq = self.find_f0_frequency(s_frame)
+                if f0_freq is not None:
+                    f0_candidate.append(f0_freq)
             f0_freq = np.median(f0_candidate)
             found_frequencies.append(f0_freq)
         return np.array(found_frequencies)
@@ -157,7 +207,7 @@ class Audio:
 
     def plot_notes_ranges(self, notes_durations, top_db):
 
-        x = np.arange(0, self.audio_data.shape[0])/SAMPLE_RATE
+        x = np.arange(0, self.audio_data.shape[0]) / SAMPLE_RATE
         zeros = np.zeros(self.audio_data.shape[0])
         fig, ax = plt.subplots()
 
