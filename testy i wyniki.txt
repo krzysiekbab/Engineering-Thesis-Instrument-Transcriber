@@ -7,24 +7,3 @@
 5. Ilość wykrytych nut metodą onset detect
 
 
-
-Usuń onsety jeśli:
-1. odległości między ramkami są < 10 (wybierz ten o największej amplitudzie)
-2. Amplituda jest mniejsza niż połowa średniej wszystkich onsetów lub 2 sąsiednich.
-
-Przy usuwaniu onsetów gdy amplituda jest mniejsza niż połowa średniej dwóch sąsiednich amplitud
-    - usunał 4 dobre nuty
-    - usunął 3 złe nuty
-
-    Ogólny bilans na -
-
-Przy usuwaniu onsetów gdy amplituda jest mniejsza niż średniej wszystkich amplitud
-    - usunał 7 dobre nuty
-    - usunął 3 złe nuty
-
-    Ogólny bilans na --
-
-
-Jak do tej pory najlepsza dla saksofonu jest filtracja filtracja medianowa i wyciszenie początkowe
-wszystkich dźwięków o wartość top db=30 dB. Dzięki wyciszeniu dwięków unikamy konieczności stosowania
-elimacji amplitudowej opartej o średnią( Jest to wręcz niewskazane)

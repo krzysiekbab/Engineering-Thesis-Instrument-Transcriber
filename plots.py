@@ -458,22 +458,20 @@ def plot_spectral_flux():
     print("onset frames:\n", onset_frames)
 
     fig, ax = plt.subplots(nrows=2, sharex=True)
-    librosa.display.waveshow(y, ax=ax[0], sr=sr, label='Sygnał wejściowy')
+    librosa.display.waveshow(y, ax=ax[0], sr=sr, label='sygnał wejściowy')
     # ax[0].set_xlabel("Czas [s]")
     ax[0].legend(prop={'size': 8})
-    ax[0].set_xlabel("")
+    ax[0].set_ylabel("Amplituda")
     # ax[0].text(-0.1, 0.5, s='a)', transform=ax[0].transAxes, va='top', ha='right')
-    ax[1].plot(times, o_env, label='Onset strength')
+    ax[1].plot(times, o_env, label='strumień widmowy')
     ax[1].vlines(times[onset_frames], 0, o_env.max(), color='r', alpha=0.9,
-                 linestyle='--', label='Wykryte miejsca'
+                 linestyle='--', label='wykryte miejsca'
                                        '')
     # ax[1].text(-0.1, 0.5, s='b)', transform=ax[1].transAxes, va='top', ha='right')
     ax[1].legend(prop={'size': 8})
     ax[1].set_xlabel("Czas [s]")
-    #
-    # plt.subplots_adjust(
-    #     bottom=0.1,
-    #     top=0.95)
+    ax[1].set_ylabel("Amplituda")
+
     plt.show()
 
 
@@ -510,7 +508,7 @@ def plot_f0_detection_steps():
     ax[0, 0].set_xlabel("Czas [s]")
     ax[0, 0].grid()
     ax[0, 0].set_title('Analizowany sygnał')
-    # ax[0, 0].set_ylabel("Moduł wartości DFT")
+    ax[0, 0].set_ylabel("Amplituda")
 
     ax[0, 1].plot(freq_vector[:8000], X[:8000], label="|X(f)|")
     # ax[0, 1].text(-0.12, 0.5, s='b)', transform=ax[0, 1].transAxes, va='top', ha='right')
@@ -518,6 +516,7 @@ def plot_f0_detection_steps():
     ax[0, 1].set_xlabel("Częstotliwość [Hz]")
     ax[0, 1].set_title('Widmo sygnału')
     ax[0, 1].grid()
+    ax[0, 1].set_ylabel("Moduł wartości DFT")
 
     ax[1, 0].plot(freq_vector[:8000], log_X[:8000], label="ln|X(f)|")
     # ax[1, 0].text(-0.12, 0.5, s='c)', transform=ax[1, 0].transAxes, va='top', ha='right')
@@ -525,6 +524,7 @@ def plot_f0_detection_steps():
     ax[1, 0].set_xlabel("Częstotliwość [Hz]")
     ax[1, 0].set_title('Logarytmiczne widmo sygnału')
     ax[1, 0].grid()
+    ax[1, 0].set_ylabel("ln|X(f)|")
 
     fmin, fmax = 50, 2500
     valid = (quefrency_vector > 1 / fmax) & (quefrency_vector <= 1 / fmin)
@@ -543,12 +543,13 @@ def plot_f0_detection_steps():
 
     ax[1, 1].set_xlim(15 / 10000, 30 / 10000)
     ax[1, 1].set_ylim(0, 5000)
+    ax[1, 1].set_ylabel("$F^{-1}(ln|X(f)|)$")
 
     plt.subplots_adjust(
         bottom=0.05,
         top=0.95,
-        left=0.05,
-        right=0.95)
+        left=0.08,
+        right=0.92)
 
     plt.show()
 
@@ -614,7 +615,6 @@ def plot_detected_and_real_onsets():
     y, sr = librosa.load(audio_path, SAMPLE_RATE)
 
     y, sr = librosa.load(audio_path, SAMPLE_RATE)
-    # %%
     top_db = 30
     y_2 = np.zeros(y.shape[0])
     y_splitted = librosa.effects.split(y, top_db=top_db)
@@ -688,6 +688,37 @@ def plot_detected_and_real_onsets():
     plt.show()
 
 
+def high_pass():
+    b, a = signal.butter(4, 100, 'high', analog=True)
+    w, h = signal.freqs(b, a)
+    plt.semilogx(w, 20 * np.log10(abs(h)))
+    # plt.title('Filtr Butterwortha')
+    plt.xlabel('Częstotliwość [Hz]')
+    plt.ylabel('Amplituda [dB]')
+    plt.margins(0, 0.1)
+    plt.grid(which='both', axis='both')
+    plt.axvline(100, color='green')  # cutoff frequency
+    plt.show()
+
+
+def plot_accuracy():
+    sax_ac = [0.88, 0.91, 0.88, 0.79, 0.85, 0.79, 0.73, 0.7, 0.67, 0.7, 0.64, 0.58, 0.64, 0.61, 0.61]
+    piano_ac = [0.77, 0.85, 0.93, 0.98, 1., 1., 1., 1., 1., 1., 0.98, 0.98, 0.98, 0.97, 0.98]
+    window_sizes = np.arange(1024, 8704, 512)
+    fig, ax = plt.subplots()
+    ax.plot(window_sizes[0::2], sax_ac[0::2], label="saksofon")
+    ax.plot(window_sizes[0::2], piano_ac[0::2], label="pianino")
+    ax.set_xticks(window_sizes[0::2])
+    ax.legend()
+    ax.set_xlabel("window_size")
+    ax.set_ylabel("Skuteczność")
+    plt.show()
+    for i in range(len(sax_ac)):
+        print(window_sizes[i], " & ", sax_ac[i], " \\")
+    print()
+    for i in range(len(piano_ac)):
+        print(window_sizes[i], " & ", piano_ac[i], " \\")
+
 if __name__ == "__main__":
     # plot_quantization()
     # plot_aliasing()
@@ -697,7 +728,8 @@ if __name__ == "__main__":
     # fourier()
     # spectrogram()
     # plot_harmonics()
-    # plot_spectral_flux()
+    plot_spectral_flux()
     # plot_f0_detection_steps()
     # plot_cepstrum()
-    pass
+    # high_pass()
+    # plot_accuracy()

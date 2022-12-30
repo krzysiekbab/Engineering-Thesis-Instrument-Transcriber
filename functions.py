@@ -45,30 +45,42 @@ def create_duration_tables(notes_duration_idx, silences_duration_idx):
 
 def choose_shortest_note_length(length):
     durations_music_21 = []
-
     if length == "1/8":
-        durations_music_21 = np.linspace(0, 1, num=3)[1:-1]
+        durations_music_21 = np.linspace(0, 1, num=3)
     if length == "1/16":
-        durations_music_21 = np.linspace(0, 1, num=5)[1:-1]
+        durations_music_21 = np.linspace(0, 1, num=5)
     if length == "1/32":
-        durations_music_21 = np.linspace(0, 1, num=9)[1:-1]
+        durations_music_21 = np.linspace(0, 1, num=9)
     if length == "1/64":
-        durations_music_21 = np.linspace(0, 1, num=17)[1:-1]
+        durations_music_21 = np.linspace(0, 1, num=17)
     if length == "real":
         pass
     return durations_music_21
 
 
-def change_to_music21_format(duration_times, shortest_note='1/16'):
+def change_to_music21_format(duration_times, shortest_note='1/8'):
     note_lengths = choose_shortest_note_length(length=shortest_note)
     duration_times_music21 = []
+    len_diff = 0
     for elem in duration_times:
-        first_part, second_part = str(elem).split(".")
+        first_part, second_part = str(elem[1]).split(".")
+        # print(first_part)
+        first_part = float(first_part)
         second_part = "0." + second_part
-        index = np.abs(note_lengths - float(second_part)).argmin()
-        second_part = str(note_lengths[index])[2:]
-        music21_duration = float(first_part + "." + second_part)
-        duration_times_music21.append(music21_duration)
+        old_second_part = float(second_part)
+        second_part = float(second_part) + len_diff
+        # print(f"second_part: {second_part}")
+        index = np.abs(note_lengths - second_part).argmin()
+        len_diff = second_part - note_lengths[index]
+        # print(
+        #     f"duration time: {elem:.5f}, second part: {old_second_part}, second part + diff: {second_part:.5f}, diff: {previous_diff:.5f}")
+        second_part = note_lengths[index]  # ucinam "0." lub "1.0"
+        # print(f"second_part: {second_part}\n")
+        music21_duration = first_part + second_part
+        if music21_duration > 0:
+            duration_times_music21.append(tuple([elem[0], music21_duration]))
+        if first_part == 0.0 and old_second_part == 0.0:
+            len_diff = 0
     return duration_times_music21
 
 
@@ -77,17 +89,20 @@ def create_notes_and_rests(music_notes, stream):
         if note[0] == "rest":
             stream.append(music21.note.Rest(note[1]))
         else:
-            note1 = music21.note.Note(note[0])
-            note1.duration.quarterLength = note[1]
-            stream.append(note1)
+            temp_note = music21.note.Note(note[0])
+            temp_note.duration.quarterLength = note[1]
+            stream.append(temp_note)
     return stream
 
 
 def time_to_beat(duration, tempo):
     return tempo * duration / 60
 
+
 def record_audio():
     pass
+
+
 # tempo = librosa.beat.tempo(onset_envelope=onset_env, sr=SAMPLE_RATE)
 # print(f"Tempo: {tempo}")
 # def time_to_beat(duration, tempo):
@@ -111,3 +126,6 @@ def record_audio():
 #         f"\tPoczątek dźwięku: {onsets[i]},"
 #         f"\tDługość dźwięku: {notes_duration_idx[i]},"
 #         f"\tDługość ciszy: {silences_duration_idx[i]}")
+
+if __name__ == "__main__":
+    pass

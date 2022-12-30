@@ -1,3 +1,5 @@
 1. Przy wysokiej wartości top_tb oraz możliwości pisania nut o bardzo małym czasie trwania (np. shortest_note = 1/64)
 dźwięki będą miały najmiejszą wartość z możliwych. Gdyby wektor wartości nut był o 0 wtedy mogłyby mieć nawet wartość 0 co
 wywoływałoby problemy przy tworzeniu instacji klasy Note z pakietu music21.
+
+2.  Aplikacja nie bierze pod uwagę malejącej amplitudy dźwięku im dźwięki są dłuższe.
