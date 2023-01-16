@@ -1,10 +1,9 @@
 import tkinter as tk
-from tkinter import ttk
 from PIL import Image, ImageTk
 from tkinter import filedialog
 from tkinter.messagebox import showinfo
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import librosa
 import pygame
 import librosa.display
@@ -14,19 +13,30 @@ import music21
 from functions import *
 import time
 import tkinter.ttk as ttk
-
+import threading
+import pyaudio
+import wave
+from datetime import datetime
 from audio_class import Audio
 
 count_pages = 0
 path = None
 paused = False
-file_changed = False
-file_chosen = False
 stream = None
-saving_path = None
+pdf_path = None
 audio_instance = None
 notes_durations = None
 song_length = 0
+creation_time = None
+record_frame = True
+stopped = False
+recording = False
+audio = None
+recorded_stream = None
+frames = []
+warning_placed = False
+file_chosen = False
+algorithm_done = False
 
 
 def move_next_page():
@@ -72,23 +82,30 @@ def move_previous_page():
 
 def select_file():
     global path, audio_name
+    directory = os.getcwd() + "\\Audio"
     filetypes = (
         (".wav files", "*.wav"),
     )
     path = filedialog.askopenfilename(
-        title='Open a file',
-        initialdir='D:\Studia\MusicApp\Audio',
+        title='Wybierz plik',
+        initialdir=directory,
         filetypes=filetypes)
-    if path:
-        switch_button_state(next_button_page_1)
     audio_name.set(path.split('/')[-1][:-4])
-    # filetypes=filetypes)
-    print(path)
-    print(audio_name.get())
-    # showinfo(
-    #     title='Selected File',
-    #     message=filename
-    # )
+    if path == "":
+        path = None
+    print(f"Loaded file: {audio_name.get()}, type: {type(path)}")
+
+
+def check_path():
+    global path, file_chosen
+    if path is None:
+        next_button_page_1["state"] = "disabled"
+        file_chosen = False
+    else:
+        file_chosen = True
+        if algorithm_done:
+            next_button_page_2["state"] = "disabled"
+        switch_button_state(next_button_page_1)
 
 
 def switch_button_state(button_type):
@@ -114,7 +131,7 @@ def show_wave_plot(audio_path):
     ax1.set_xlabel("Czas [s]")
     # ax1.get_yaxis().set_visible(False)
     ax1.set_ylabel("Amplituda")
-    print(int(song_length))
+    # print(int(song_length))
     ax1.set_xlim([0, len(audio_data) / 44100])
     figure1.tight_layout()
 
@@ -207,10 +224,8 @@ def stop_song():
 
 
 def run_application(audio_path, audio_name):
-    global stream
-    global saving_path
-    global audio_instance
-    global notes_durations
+    global stream, pdf_path, audio_instance, notes_durations, creation_time, algorithm_done
+
     WINDOW_SIZE = int(selected_window_size.get())
     HOP_SIZE = int(selected_hop_size.get())
     TOP_DB = int(selected_threshold.get())
@@ -243,7 +258,8 @@ def run_application(audio_path, audio_name):
     # ESTIMATE TEMPO
     tempo = audio_file.estimate_tempo()
     tempo = float(tempo)
-    # tempo = 150
+    # if audio_name == 'Autumn leaves - saksofon' or audio_name == 'Autumn leaves - pianino':
+    #     tempo = 150
 
     # DIVIDE SIGNAL INTO FRAMES FROM ONSET TO ONSET;
     onset_frames = audio_file.divide_into_onset_frames()
@@ -317,13 +333,22 @@ def run_application(audio_path, audio_name):
                                 f'hop_size = {audio_file.hop_size}\n' \
                                 f'sample_rate = {audio_file.sample_rate}\n' \
                                 f'frequency_range = {audio_file.frequency_range}'
-    stream1.metadata.composer = ""
+    # stream1.metadata.composer = ""
     stream = stream1
-    saving_path = os.getcwd() + '\Results\PDF\\' + audio_file.audio_name
-    stream1.write('musicxml.pdf', saving_path)
+    data = datetime.now()
+    data = data.strftime("%d-%m-%Y %H.%M.%S")
+    creation_time = f" ({data})"
+    pdf_path = os.getcwd() + '\Results\PDF\\' + audio_file.audio_name
+    stream1.write('musicxml.pdf', pdf_path)
+    file_path = pdf_path + '.pdf'
+    new_saving_path = pdf_path + f" ({data}).pdf"
+    os.rename(file_path, new_saving_path)
+    os.rename(pdf_path + '.musicxml', new_saving_path[:-4] + '.musicxml')
+    pdf_path = new_saving_path[:-4]
 
     audio_instance = audio_file
     notes_durations = notes_duration_idx
+    algorithm_done = True
 
 
 def open_musescore():
@@ -332,9 +357,18 @@ def open_musescore():
 
 
 def open_pdf():
-    global saving_path
-    file = saving_path + '.pdf'
+    global pdf_path
+    file = pdf_path + '.pdf'
+    # file = saving_path
     subprocess.Popen([file], shell=True)
+
+
+def create_midi():
+    global stream, audio_instance, creation_time
+    mf = music21.midi.translate.streamToMidiFile(stream)
+    mf.open(os.getcwd() + '\Results\MIDI\\' + audio_instance.audio_name + creation_time + ".mid", 'wb')
+    mf.write()
+    mf.close()
 
 
 def play_time():
@@ -367,6 +401,108 @@ def slide(x):
     # slider_label.config(text=f'{int(my_slider.get())} z {int(song_length)}')
 
 
+def switch_to_record_frame():
+    global record_frame, path
+    if path:
+        next_button_page_1["state"] = "disabled"
+    if record_frame:
+        mid_page_1.forget()
+        bottom_page_1.forget()
+        mid_page_12.pack(fill="x")
+        bottom_page_1.pack(fill="x", expand=True)
+        record_frame = False
+
+    else:
+        mid_page_12.forget()
+        bottom_page_1.forget()
+        mid_page_1.pack(fill="x")
+        bottom_page_1.pack(fill="x", expand=True)
+        record_frame = True
+
+
+def handle_recording():
+    global recording
+
+    if recording:
+        recording = False
+        # stop_recording_button.config(fg="black")
+    else:
+        recording = True
+        # stop_recording_button.config(fg="red")
+        threading.Thread(target=start_recording).start()
+
+
+def start_recording():
+    global audio, recorded_stream, frames
+
+    audio = pyaudio.PyAudio()
+    recorded_stream = audio.open(format=pyaudio.paInt16, channels=2, rate=44100,
+                                 input=True, frames_per_buffer=1024)
+    frames = []
+    start = time.time()
+    switch_button_state(stop_recording_button)
+    while recording:
+        data = recorded_stream.read(1024)
+        frames.append(data)
+
+        passed = time.time() - start
+        secs = passed % 60
+        mins = passed // 60
+        hours = mins // 60
+        time_label.config(text=f"{int(hours):02d}:{int(mins):02d}:{int(secs):02d}")
+        # , fg = "red"
+
+
+def stop_recording():
+    global audio
+    global recorded_stream
+
+    recorded_stream.stop_stream()
+    recorded_stream.close()
+    audio.terminate()
+    switch_button_state(save_recorded_audio)
+    switch_button_state(file_name_entry)
+
+
+def save_recording():
+    global audio, frames, warning_placed, path, audio_name
+    directory = os.getcwd() + "\\Audio\\Recorded\\"
+
+    filename = file_name_entry.get()
+    if filename != "":
+        if warning_placed:
+            warning["text"] = ""
+        # Save the recorded data as a WAV file
+        file = directory + filename + ".wav"
+        wf = wave.open(file, 'wb')
+        wf.setnchannels(2)
+        wf.setsampwidth(audio.get_sample_size(pyaudio.paInt16))
+        wf.setframerate(44100)
+        wf.writeframes(b''.join(frames))
+        wf.close()
+
+        path = file
+        audio_name.set(path.split('\\')[-1][:-4])
+        print(f"Loaded file: {audio_name.get()}")
+
+    else:
+        warning.place(x=25, y=390, width=500, height=25)
+        warning["text"] = "Nazwa pliku nie może być pusta !!!"
+        warning_placed = True
+
+
+def clear_recording_window():
+    file_name_entry.delete(0, tk.END)
+    time_label["text"] = "00:00:00"
+    record_audio_button_2["state"] = "normal"
+    file_name_entry["state"] = "disabled"
+    save_recorded_audio["state"] = "disabled"
+
+
+def handle_selection(event):
+    print(event.widget.get())
+
+
 if __name__ == "__main__":
     root = tk.Tk()  # Creating instance of Tk class
     root.title("Aplikacja muzyczna do przetwarzania ścieżek dźwiękowych w nuty")
@@ -394,6 +530,7 @@ if __name__ == "__main__":
     play_img = ImageTk.PhotoImage(Image.open('GUI/images/play.png').resize((55, 55)))
     pause_img = ImageTk.PhotoImage(Image.open('GUI/images/pause.png').resize((55, 55)))
     stop_img = ImageTk.PhotoImage(Image.open('GUI/images/stop.png').resize((55, 55)))
+    stop_recording_img = ImageTk.PhotoImage(Image.open('GUI/images/stop_recording.png').resize((40, 40)))
 
 
     class TopFrame:
@@ -427,6 +564,7 @@ if __name__ == "__main__":
             self.mid_frame = mid_frame
             self.bot_frame = bot_frame
 
+
     top_frame = tk.Frame(root, width=1024, height=50, relief="groove", borderwidth=2, background="#F0F0F0")
 
     head_label_left = tk.Label(top_frame, text="Aplikacja muzyczna", image=img_AGH, compound="left", font=label_font,
@@ -439,23 +577,76 @@ if __name__ == "__main__":
     head_label_right.place(x=512, y=0, width=512, height=50)
 
     top_frame.pack(fill="x")
-
+    # ----------------------------------------------------------------------------------------------------------------
     mid_page_1 = tk.Frame(root, width=1024, height=658, background='#FFFFFF')
     main_text = tk.Label(mid_page_1, text="Witaj w aplikacji muzycznej do przetwarzania\n"
                                           "ścieżek dźwiękowych w nuty!\n\n"
                                           "Aby przejść dalej wybierz lub nagraj plik audio.",
                          font=label_font, background='#FFFFFF')
     load_audio_button = tk.Button(mid_page_1, text=" Wybierz plik", font=label_font, image=file_img,
-                                  compound="left", command=lambda: [select_file()], cursor="hand2")
-    record_audio_button = tk.Button(mid_page_1, text="Nagraj ścieżkę audio", font=label_font, state="disabled",
-                                    image=microphone_img, compound="left", cursor="hand2")
+                                  compound="left", command=lambda: [select_file(), check_path()], cursor="hand2")
+    record_audio_button = tk.Button(mid_page_1, text="Nagraj ścieżkę audio", font=label_font,
+                                    image=microphone_img, compound="left", cursor="hand2",
+                                    command=lambda: [switch_to_record_frame(),
+                                                     ])
     main_text.place(x=112, y=100, width=800, height=300)
     load_audio_button.place(x=262, y=420, width=500, height=60, )
     record_audio_button.place(x=262, y=530, width=500, height=60, )
     mid_page_1.pack(fill="x")
+    # ----------------------------------------------------------------------------------------------------------------
+    mid_page_12 = tk.Frame(root, width=1024, height=658, background='#FFFFFF')
+    recording_frame = tk.Frame(mid_page_12, borderwidth=4, background='#FFFFFF', relief="groove")
+    recording_frame.place(x=237, y=39, width=550, height=580)
+    record_audio_label = tk.Label(recording_frame, text="Kliknij poniższy przycisk aby rozpocząć nagrywanie:",
+                                  font=label_font_2, background='#FFFFFF', anchor="w")
+
+    record_audio_button_2 = tk.Button(recording_frame, text=" Rozpocznij nagrywanie", font=label_font_2,
+                                      image=microphone_img, compound="left",
+                                      command=lambda: [handle_recording(), switch_button_state(record_audio_button_2)],
+                                      cursor="hand2")
+    time_label = tk.Label(recording_frame, text="00:00:00", background='#FFFFFF', font=label_font_2)
+
+    stop_recording_label = tk.Label(recording_frame, text="Kliknij poniższy przycisk aby zatrzymać nagrywanie:",
+                                    font=label_font_2, background='#FFFFFF', anchor="w")
+
+    stop_recording_button = tk.Button(recording_frame, text=" Zatrzymaj nagrywanie", state='disabled',
+                                      font=label_font_2,
+                                      image=stop_recording_img, compound="left",
+                                      command=lambda: [handle_recording(), stop_recording(),
+                                                       switch_button_state(stop_recording_button)],
+                                      cursor="hand2")
+
+    name_audio_label = tk.Label(recording_frame, text="Wprowadź nazwę: ",
+                                font=label_font_2, background='#FFFFFF', anchor="w")
+
+    recorded_name = tk.StringVar()
+    file_name_entry = tk.Entry(recording_frame, font=label_font_2, textvariable=recorded_name, bd=5, state='disabled')
+
+    save_recorded_audio = tk.Button(recording_frame, text="Zapisz plik", font=label_font_2, compound="left",
+                                    cursor="hand2", state='disabled', command=lambda: [save_recording()])
+    warning = tk.Label(recording_frame, text="",
+                       font=label_font_2, background='#FFFFFF', fg="red")
+
+    close_recording_frame = tk.Button(recording_frame, text="Zamknij okno", font=label_font_2, compound="left",
+                                      cursor="hand2",
+                                      command=lambda: [switch_to_record_frame(), clear_recording_window(),
+                                                       check_path()])
+    repeat_recording_button = tk.Button(recording_frame, text="Powtórz nagrywnie", font=label_font_2, compound="left",
+                                        cursor="hand2", command=lambda: [clear_recording_window()])
+
+    record_audio_label.place(x=25, y=25, width=500, height=25)
+    record_audio_button_2.place(x=135, y=75, width=280, height=50)
+    time_label.place(x=135, y=140, width=280, height=25)
+    stop_recording_label.place(x=25, y=200, width=500, height=25)
+    stop_recording_button.place(x=135, y=250, width=280, height=50)
+    name_audio_label.place(x=25, y=325, width=250, height=50)
+    file_name_entry.place(x=225, y=325, width=250, height=50)
+    warning.place(x=25, y=390, width=500, height=25)
+    save_recorded_audio.place(x=135, y=430, width=280, height=50)
+    repeat_recording_button.place(x=25, y=505, width=225, height=50)
+    close_recording_frame.place(x=290, y=505, width=225, height=50)
 
     # ----------------------------------------------------------------------------------------------------------------
-    # %% BOTTOM_PAGE_1
     bottom_page_1 = tk.Frame(root, width=1024, height=60, relief="groove", borderwidth=2)
     quit_button = tk.Button(bottom_page_1, text="Wyjście", image=quit_img, compound="left", font=label_font,
                             width=512, command=root.destroy, cursor="hand2")  # anchor="w"
@@ -480,7 +671,7 @@ if __name__ == "__main__":
     # command=lambda: [run_application(path, audio_name),
     #                  show_wave_plot(path),
     #                  switch_button_state(next_button_page_2)])
-    settings_frame = tk.Frame(mid_page_2, borderwidth=2, background='#FFFFFF', relief="groove")
+    settings_frame = tk.Frame(mid_page_2, borderwidth=4, background='#FFFFFF', relief="groove")
 
     shortest_note_label = tk.Label(mid_page_2, text="shortest_note:", font=label_font_2,
                                    background='#FFFFFF').place(x=282, y=190, height=30)
@@ -490,9 +681,9 @@ if __name__ == "__main__":
                             background='#FFFFFF').place(x=282, y=290, height=30)
     hop_size_note_label = tk.Label(mid_page_2, text="hop_size:", font=label_font_2,
                                    background='#FFFFFF').place(x=282, y=340, height=30)
-    min_frequency_label = tk.Label(mid_page_2, text="min_frequency:", font=label_font_2,
+    min_frequency_label = tk.Label(mid_page_2, text="min_freq:", font=label_font_2,
                                    background='#FFFFFF').place(x=282, y=390)
-    max_frequency_label = tk.Label(mid_page_2, text="max_frequency:", font=label_font_2,
+    max_frequency_label = tk.Label(mid_page_2, text="max_freq:", font=label_font_2,
                                    background='#FFFFFF').place(x=282, y=440, height=30)
 
     selected_shortest_note = tk.StringVar()
@@ -538,11 +729,6 @@ if __name__ == "__main__":
     settings_frame.place(x=262, y=170, width=500, height=320)
     save_setting_button.place(x=262, y=530, width=500, height=60)
 
-
-    def handle_selection(event):
-        print(event.widget.get())
-
-
     shortest_note_combobox.bind("<<ComboboxSelected>>", handle_selection)
     threshold_combobox.bind("<<ComboboxSelected>>", handle_selection)
     windows_size_combobox.bind("<<ComboboxSelected>>", handle_selection)
@@ -572,6 +758,9 @@ if __name__ == "__main__":
 
     pygame.mixer.init()
 
+    mp3_frame = tk.Frame(mid_page_3, borderwidth=4, background='#FFFFFF', relief="groove")
+    # mp3_frame.place(x=344, y=395, width=336, height=70)
+
     play_button = tk.Button(mid_page_3, image=play_img, borderwidth=0, background="#FFFFFF",
                             activebackground="#FFFFFF", cursor="hand2", command=play_song).place(x=362, y=400, width=60,
                                                                                                  height=60)
@@ -591,23 +780,22 @@ if __name__ == "__main__":
     style.configure("TScale", background="#FFFFFF")
     my_slider = ttk.Scale(mid_page_3, from_=0, to=100, orient=tk.HORIZONTAL, value=0, command=slide, length=840,
                           style="TScale")
-    my_slider.place(x=90, y=360)
+    my_slider.place(x=90, y=350, height=30)
 
     # temporary slider label
     # slider_label = tk.Label(mid_page_3, text="0")
     # slider_label.place(x=824, y=400, width=150, height=60)
 
-    sheetmusic_button = tk.Button(mid_page_3, text="Generuj nuty", font=label_font, cursor="hand2",
-                                  compound="left")
     show_pdf = tk.Button(mid_page_3, text="Pokaż nuty (pdf)", font=label_font, compound="left", cursor="hand2",
                          command=lambda: [open_pdf()])
     show_musescore = tk.Button(mid_page_3, text="Pokaż nuty (Musescore)", font=label_font, compound="left",
                                cursor="hand2", command=lambda: [open_musescore()])
-
-    # sheetmusic_button.place(x=262, y=420, width=500, height=60)
-    show_pdf.place(x=50, y=530, width=437, height=60)
-    show_musescore.place(x=537, y=530, width=437, height=60)
-
+    generate_midi = tk.Button(mid_page_3, text="Generuj midi", font=label_font, cursor="hand2", command=create_midi)
+    # show_pdf.place(x=50, y=480, width=437, height=60)
+    # show_musescore.place(x=537, y=480, width=437, height=60)
+    show_pdf.place(x=90, y=486, width=400, height=60)
+    show_musescore.place(x=534, y=486, width=400, height=60)
+    generate_midi.place(x=312, y=572, width=400, height=60)
     # mid_page_3.pack(fill="x")
     # ----------------------------------------------------------------------------------------------------------------
     bottom_page_3 = tk.Frame(root, width=1024, height=60, relief="groove", borderwidth=2)
@@ -629,10 +817,10 @@ if __name__ == "__main__":
     bottom_page_4 = tk.Frame(root, width=1024, height=60, relief="groove", borderwidth=2)
 
     cancel_button_page_4 = tk.Button(bottom_page_4, text="Powrót", image=cancel_img, compound="left", font=label_font,
-                                     width=1024, cursor="hand2", command=move_previous_page)  # anchor="w"
+                                     width=1024, cursor="hand2", command=move_previous_page)
 
     cancel_button_page_4.place(x=0, y=0, width=1024, height=60)
 
     # bottom_frame_4.pack(fill="x", expand=True)
-
+    # root.focus()
     root.mainloop()
