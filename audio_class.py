@@ -3,9 +3,7 @@ import librosa
 import librosa.display
 import matplotlib.pyplot as plt
 from playsound import playsound
-from constants import *
 import matplotlib.collections as collections
-import os
 from scipy.signal import butter, sosfilt
 
 

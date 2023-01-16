@@ -1,9 +1,0 @@
-1. Napisać o przetestowaniu wszystkich dźwięków pianina oraz saksofonu.
-    a) napisać skujteczność wykrycia tonu podstawowego
-2. Zrobić analizę utworu Autumn Leaves zagranego na pianinie oraz saksofonie. Ścieżki muszą być zagrane dokładnie sak samo żeby mieć miarodajne wyniki
-    a) wstawić wykresy występowania nut
-3. Wpływ tresholda na wygląd końcowych nut - porównanie wykresów dla tresholda 30 oraz 60.
-4. Wpływ parametru shortest_note na wygląd końcowych nut.
-5. Ilość wykrytych nut metodą onset detect
-
-

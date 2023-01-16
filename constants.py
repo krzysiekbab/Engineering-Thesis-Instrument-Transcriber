@@ -1,10 +1,3 @@
-SAMPLE_RATE = 44100
-FREQUENCY_RANGE = (50, 2500)
-# WINDOW_SIZE = 8192
-# HOP_LENGTH = 1024
-WINDOW_SIZE = 1024
-HOP_LENGTH = 512
-
 piano_single_notes = ['piano C2.wav', 'piano C#2.wav', 'piano D2.wav', 'piano D#2.wav', 'piano E2.wav', 'piano F2.wav',
                       'piano F#2.wav', 'piano G2.wav', 'piano G#2.wav', 'piano A2.wav', 'piano A#2.wav', 'piano H2.wav',
                       'piano C3.wav', 'piano C#3.wav', 'piano D3.wav', 'piano D#3.wav', 'piano E3.wav', 'piano F3.wav',

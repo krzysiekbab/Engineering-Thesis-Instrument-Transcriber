@@ -30,10 +30,6 @@ def main():
     # audio_name = '\Audio\\Autumn leaves - saksofon.wav'
     audio_name = '\Audio\\sax\\single notes\\sax F#2.wav'
 
-    # audio_name = '\Audio\\Autumn leaves - pianino.wav'
-    # audio_name = '\Audio\Recorded\\gama c dur wokal.wav'
-    # audio_name = '\Audio\Recorded\\lala.wav'
-
     audio_path = directory + audio_name
     audio_name = audio_name.split('\\')[-1][:-4]
 
@@ -154,20 +150,9 @@ def main():
 
     # PRINT STREAM IN MUSESCORE
     # stream1.show()
-    # pdf_file = music21.midi.translate.streamToPdfFile
-
-    audio_file.plot_wave()
-    audio_file.plot_magnitude_spectrum()
-    # audio_file.plot_spectrogram()
-    # audio_file.plot_mel_spectrogram()
 
     # WRITE SHEETMUSIC TO PDF WITHOUT OPENING MUSESCORE
     stream1.write('musicxml.pdf', directory + '\Results\PDF\\' + audio_file.audio_name)
-    # EXPORT TO MIDI
-    # mf = music21.midi.translate.streamToMidiFile(stream1)
-    # mf.open(directory + '\Results\midi.mid', 'wb')
-    # mf.write()
-    # mf.close()
 
 
 if __name__ == "__main__":

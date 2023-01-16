@@ -1,15 +1,11 @@
 import tkinter as tk
 from PIL import Image, ImageTk
 from tkinter import filedialog
-from tkinter.messagebox import showinfo
-import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-import librosa
 import pygame
 import librosa.display
 import os
 import subprocess
-import music21
 from functions import *
 import time
 import tkinter.ttk as ttk
@@ -108,6 +104,104 @@ def check_path():
         switch_button_state(next_button_page_1)
 
 
+def switch_to_record_frame():
+    global record_frame, path
+    if path:
+        next_button_page_1["state"] = "disabled"
+    if record_frame:
+        mid_page_1.forget()
+        bottom_page_1.forget()
+        mid_page_12.pack(fill="x")
+        bottom_page_1.pack(fill="x", expand=True)
+        record_frame = False
+
+    else:
+        mid_page_12.forget()
+        bottom_page_1.forget()
+        mid_page_1.pack(fill="x")
+        bottom_page_1.pack(fill="x", expand=True)
+        record_frame = True
+
+
+def handle_recording():
+    global recording
+
+    if recording:
+        recording = False
+        # stop_recording_button.config(fg="black")
+    else:
+        recording = True
+        # stop_recording_button.config(fg="red")
+        threading.Thread(target=start_recording).start()
+
+
+def start_recording():
+    global audio, recorded_stream, frames
+
+    audio = pyaudio.PyAudio()
+    recorded_stream = audio.open(format=pyaudio.paInt16, channels=2, rate=44100,
+                                 input=True, frames_per_buffer=1024)
+    frames = []
+    start = time.time()
+    switch_button_state(stop_recording_button)
+    while recording:
+        data = recorded_stream.read(1024)
+        frames.append(data)
+
+        passed = time.time() - start
+        secs = passed % 60
+        mins = passed // 60
+        hours = mins // 60
+        time_label.config(text=f"{int(hours):02d}:{int(mins):02d}:{int(secs):02d}")
+        # , fg = "red"
+
+
+def stop_recording():
+    global audio
+    global recorded_stream
+
+    recorded_stream.stop_stream()
+    recorded_stream.close()
+    audio.terminate()
+    switch_button_state(save_recorded_audio)
+    switch_button_state(file_name_entry)
+
+
+def save_recording():
+    global audio, frames, warning_placed, path, audio_name
+    directory = os.getcwd() + "\\Audio\\Recorded\\"
+
+    filename = file_name_entry.get()
+    if filename != "":
+        if warning_placed:
+            warning["text"] = ""
+        # Save the recorded data as a WAV file
+        file = directory + filename + ".wav"
+        wf = wave.open(file, 'wb')
+        wf.setnchannels(2)
+        wf.setsampwidth(audio.get_sample_size(pyaudio.paInt16))
+        wf.setframerate(44100)
+        wf.writeframes(b''.join(frames))
+        wf.close()
+
+        path = file
+        audio_name.set(path.split('\\')[-1][:-4])
+        print(f"Loaded file: {audio_name.get()}")
+
+    else:
+        warning.place(x=25, y=390, width=500, height=25)
+        warning["text"] = "Nazwa pliku nie może być pusta !!!"
+        warning_placed = True
+
+
+def clear_recording_window():
+    file_name_entry.delete(0, tk.END)
+    time_label["text"] = "00:00:00"
+    record_audio_button_2["state"] = "normal"
+    file_name_entry["state"] = "disabled"
+    save_recorded_audio["state"] = "disabled"
+
+
 def switch_button_state(button_type):
     if button_type["state"] == "normal":
         if button_type is next_button_page_1 or button_type is next_button_page_2:
@@ -116,111 +210,6 @@ def switch_button_state(button_type):
             button_type["state"] = "disabled"
     else:
         button_type["state"] = "normal"
-
-
-def show_wave_plot(audio_path):
-    global song_length
-    audio_data, sr = librosa.load(audio_path, sr=44100)
-    figure1 = plt.Figure(figsize=(10, 5), dpi=50)
-    ax1 = figure1.add_subplot(111)
-    bar1 = FigureCanvasTkAgg(figure1, mid_page_3)
-    # bar1.get_tk_widget().place(x=25, y=80, width=924, height=250)
-    bar1.get_tk_widget().place(x=20, y=80, width=924, height=250)
-
-    librosa.display.waveshow(audio_data, alpha=0.5, sr=44100, ax=ax1)
-    ax1.set_xlabel("Czas [s]")
-    # ax1.get_yaxis().set_visible(False)
-    ax1.set_ylabel("Amplituda")
-    # print(int(song_length))
-    ax1.set_xlim([0, len(audio_data) / 44100])
-    figure1.tight_layout()
-
-
-def show_detailed_plots():
-    global audio_instance
-    global notes_durations
-
-    figure1 = plt.Figure(dpi=100, figsize=(10, 8))
-    ax1 = figure1.add_subplot(221)
-    ax2 = figure1.add_subplot(222)
-    ax3 = figure1.add_subplot(223)
-    ax4 = figure1.add_subplot(224)
-
-    bar1 = FigureCanvasTkAgg(figure1, mid_page_4)
-    bar1.get_tk_widget().place(x=25, y=10, width=974, height=638)
-    librosa.display.waveshow(audio_instance.audio_data_filtered, alpha=0.5, sr=44100, ax=ax1)
-
-    ax1.set_title(f'Przefiltrowany sygnał')
-    ax1.set_xlabel("Czas [s]")
-    ax1.set_ylabel("Amplituda")
-
-    x = np.arange(0, audio_instance.audio_data.shape[0]) / audio_instance.sample_rate
-    zeros = np.zeros(audio_instance.audio_data.shape[0])
-
-    for sound in notes_durations:
-        first_idx, second_idx = sound
-        zeros[first_idx:second_idx] = 1
-    collection = collections.BrokenBarHCollection.span_where(
-        x, ymin=0, ymax=np.abs(audio_instance.audio_data).max(),
-        where=zeros > 0, facecolor='orange',
-        label='Obszar występowania\ndźwięku')
-    ax2.add_collection(collection)
-    librosa.display.waveshow(audio_instance.audio_data, sr=audio_instance.sample_rate, ax=ax2)
-    ax2.set_xlabel('Czas [s]')
-    ax2.set_ylabel('Amplituda')
-    ax2.set_title(f'Przedziały występowania dźwięków')
-    ax2.legend(loc='lower right')
-
-    stft_data = np.abs(librosa.stft(audio_instance.audio_data))
-    stft_data_db = librosa.amplitude_to_db(stft_data)
-    img = librosa.display.specshow(stft_data_db, x_axis='time', y_axis='log', ax=ax3, sr=audio_instance.sample_rate)
-    ax3.set_title(f"Spectrogram")
-    ax3.set_xlabel("Czas [s]")
-    ax3.set_ylabel("Częstotliwość [Hz]")
-    figure1.colorbar(img, ax=ax3, format="%+2.0f dB")
-
-    onset_frames = librosa.samples_to_frames(audio_instance.onsets, hop_length=audio_instance.hop_size)
-    times = librosa.times_like(audio_instance.envelope, sr=audio_instance.sample_rate)
-
-    ax4.plot(times, audio_instance.envelope, label='strumień widmowy')
-    ax4.vlines(times[onset_frames], 0, audio_instance.envelope.max(), color='r', alpha=0.5, linestyle='--',
-               label='wykryte nuty')
-    ax4.legend(loc='upper right')
-    ax4.set_ylabel("Amplituda")
-    ax4.set_xlabel("Czas [s]")
-    ax4.set_title(f"Wykryte miejsca kolejnych nut")
-    figure1.tight_layout()
-
-
-def play_song():
-    global song_length
-    pygame.mixer.music.load(path)
-    pygame.mixer.music.play(loops=0)
-
-    # call the play_time function to get song lenght
-    play_time()
-
-    # update slider to position
-    slider_position = int(song_length)
-    my_slider.config(to=slider_position, value=0)
-
-
-def pause_song(is_paused):
-    global paused
-    paused = is_paused
-    if paused:
-        pygame.mixer.music.unpause()
-        paused = False
-    else:
-        pygame.mixer.music.pause()
-        paused = True
-
-
-def stop_song():
-    pygame.mixer.music.stop()
-
-    # clear status_bar
-    status_bar.config(text='')
 
 
 def run_application(audio_path, audio_name):
@@ -252,6 +241,7 @@ def run_application(audio_path, audio_name):
 
     # DETECTING ONSETS IN AUDIO FILE
     onsets = audio_file.detect_onsets(aggregate=np.mean)
+
     # FILTERING ONSETS
     audio_file.filter_onsets()
 
@@ -351,6 +341,42 @@ def run_application(audio_path, audio_name):
     algorithm_done = True
 
 
+def play_song():
+    global song_length
+    pygame.mixer.music.load(path)
+    pygame.mixer.music.play(loops=0)
+
+    # call the play_time function to get song lenght
+    play_time()
+
+    # update slider to position
+    slider_position = int(song_length)
+    my_slider.config(to=slider_position, value=0)
+
+
+def pause_song(is_paused):
+    global paused
+    paused = is_paused
+    if paused:
+        pygame.mixer.music.unpause()
+        paused = False
+    else:
+        pygame.mixer.music.pause()
+        paused = True
+
+
+def stop_song():
+    pygame.mixer.music.stop()
+
+    # clear status_bar
+    status_bar.config(text='')
+
+
+def slide(x):
+    global song_length
+    # slider_label.config(text=f'{int(my_slider.get())} z {int(song_length)}')
+
+
 def open_musescore():
     global stream
     stream.show()
@@ -396,107 +422,78 @@ def play_time():
     status_bar.after(1000, play_time)
 
 
-def slide(x):
+def show_wave_plot(audio_path):
     global song_length
-    # slider_label.config(text=f'{int(my_slider.get())} z {int(song_length)}')
+    audio_data, sr = librosa.load(audio_path, sr=44100)
+    figure1 = plt.Figure(figsize=(10, 5), dpi=50)
+    ax1 = figure1.add_subplot(111)
+    bar1 = FigureCanvasTkAgg(figure1, mid_page_3)
+    # bar1.get_tk_widget().place(x=25, y=80, width=924, height=250)
+    bar1.get_tk_widget().place(x=20, y=80, width=924, height=250)
+
+    librosa.display.waveshow(audio_data, alpha=0.5, sr=44100, ax=ax1)
+    ax1.set_xlabel("Czas [s]")
+    # ax1.get_yaxis().set_visible(False)
+    ax1.set_ylabel("Amplituda")
+    # print(int(song_length))
+    ax1.set_xlim([0, len(audio_data) / 44100])
+    figure1.tight_layout()
 
 
-def switch_to_record_frame():
-    global record_frame, path
-    if path:
-        next_button_page_1["state"] = "disabled"
-    if record_frame:
-        mid_page_1.forget()
-        bottom_page_1.forget()
-        mid_page_12.pack(fill="x")
-        bottom_page_1.pack(fill="x", expand=True)
-        record_frame = False
+def show_detailed_plots():
+    global audio_instance
+    global notes_durations
 
-    else:
-        mid_page_12.forget()
-        bottom_page_1.forget()
-        mid_page_1.pack(fill="x")
-        bottom_page_1.pack(fill="x", expand=True)
-        record_frame = True
+    figure1 = plt.Figure(dpi=100, figsize=(10, 8))
+    ax1 = figure1.add_subplot(221)
+    ax2 = figure1.add_subplot(222)
+    ax3 = figure1.add_subplot(223)
+    ax4 = figure1.add_subplot(224)
 
+    bar1 = FigureCanvasTkAgg(figure1, mid_page_4)
+    bar1.get_tk_widget().place(x=25, y=10, width=974, height=638)
+    librosa.display.waveshow(audio_instance.audio_data_filtered, alpha=0.5, sr=44100, ax=ax1)
 
-def handle_recording():
-    global recording
+    ax1.set_title(f'Przefiltrowany sygnał')
+    ax1.set_xlabel("Czas [s]")
+    ax1.set_ylabel("Amplituda")
 
-    if recording:
-        recording = False
-        # stop_recording_button.config(fg="black")
-    else:
-        recording = True
-        # stop_recording_button.config(fg="red")
-        threading.Thread(target=start_recording).start()
+    x = np.arange(0, audio_instance.audio_data.shape[0]) / audio_instance.sample_rate
+    zeros = np.zeros(audio_instance.audio_data.shape[0])
 
+    for sound in notes_durations:
+        first_idx, second_idx = sound
+        zeros[first_idx:second_idx] = 1
+    collection = collections.BrokenBarHCollection.span_where(
+        x, ymin=0, ymax=np.abs(audio_instance.audio_data).max(),
+        where=zeros > 0, facecolor='orange',
+        label='Obszar występowania\ndźwięku')
+    ax2.add_collection(collection)
+    librosa.display.waveshow(audio_instance.audio_data, sr=audio_instance.sample_rate, ax=ax2)
+    ax2.set_xlabel('Czas [s]')
+    ax2.set_ylabel('Amplituda')
+    ax2.set_title(f'Przedziały występowania dźwięków')
+    ax2.legend(loc='lower right')
 
-def start_recording():
-    global audio, recorded_stream, frames
+    stft_data = np.abs(librosa.stft(audio_instance.audio_data))
+    stft_data_db = librosa.amplitude_to_db(stft_data)
+    img = librosa.display.specshow(stft_data_db, x_axis='time', y_axis='log', ax=ax3, sr=audio_instance.sample_rate)
+    ax3.set_title(f"Spectrogram")
+    ax3.set_xlabel("Czas [s]")
+    ax3.set_ylabel("Częstotliwość [Hz]")
+    figure1.colorbar(img, ax=ax3, format="%+2.0f dB")
 
-    audio = pyaudio.PyAudio()
-    recorded_stream = audio.open(format=pyaudio.paInt16, channels=2, rate=44100,
-                                 input=True, frames_per_buffer=1024)
-    frames = []
-    start = time.time()
-    switch_button_state(stop_recording_button)
-    while recording:
-        data = recorded_stream.read(1024)
-        frames.append(data)
+    onset_frames = librosa.samples_to_frames(audio_instance.onsets, hop_length=audio_instance.hop_size)
+    times = librosa.times_like(audio_instance.envelope, sr=audio_instance.sample_rate)
 
-        passed = time.time() - start
-        secs = passed % 60
-        mins = passed // 60
-        hours = mins // 60
-        time_label.config(text=f"{int(hours):02d}:{int(mins):02d}:{int(secs):02d}")
-        # , fg = "red"
-
-
-def stop_recording():
-    global audio
-    global recorded_stream
-
-    recorded_stream.stop_stream()
-    recorded_stream.close()
-    audio.terminate()
-    switch_button_state(save_recorded_audio)
-    switch_button_state(file_name_entry)
-
-
-def save_recording():
-    global audio, frames, warning_placed, path, audio_name
-    directory = os.getcwd() + "\\Audio\\Recorded\\"
-
-    filename = file_name_entry.get()
-    if filename != "":
-        if warning_placed:
-            warning["text"] = ""
-        # Save the recorded data as a WAV file
-        file = directory + filename + ".wav"
-        wf = wave.open(file, 'wb')
-        wf.setnchannels(2)
-        wf.setsampwidth(audio.get_sample_size(pyaudio.paInt16))
-        wf.setframerate(44100)
-        wf.writeframes(b''.join(frames))
-        wf.close()
-
-        path = file
-        audio_name.set(path.split('\\')[-1][:-4])
-        print(f"Loaded file: {audio_name.get()}")
-
-    else:
-        warning.place(x=25, y=390, width=500, height=25)
-        warning["text"] = "Nazwa pliku nie może być pusta !!!"
-        warning_placed = True
-
-
-def clear_recording_window():
-    file_name_entry.delete(0, tk.END)
-    time_label["text"] = "00:00:00"
-    record_audio_button_2["state"] = "normal"
-    file_name_entry["state"] = "disabled"
-    save_recorded_audio["state"] = "disabled"
+    ax4.plot(times, audio_instance.envelope, label='strumień widmowy')
+    ax4.vlines(times[onset_frames], 0, audio_instance.envelope.max(), color='r', alpha=0.5, linestyle='--',
+               label='wykryte nuty')
+    ax4.legend(loc='upper right')
+    ax4.set_ylabel("Amplituda")
+    ax4.set_xlabel("Czas [s]")
+    ax4.set_title(f"Wykryte miejsca kolejnych nut")
+    figure1.tight_layout()
 
 
 def handle_selection(event):
