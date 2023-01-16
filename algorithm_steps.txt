@@ -1,4 +1,0 @@
-1. Wczytanie ścieżki dźwiękowej
-2. Filtr amplitudowy (Podział ścieżki na przedziały dźwiękowe i ciszy)
-3. Wykrycie momentów rozpoczynania się dźwięków.
-3.
