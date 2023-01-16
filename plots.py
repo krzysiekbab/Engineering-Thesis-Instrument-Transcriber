@@ -36,13 +36,14 @@ def plot_quantization():
 
     fig, ax = plt.subplots(2, 1, figsize=(10, 8))
 
+
     # ALT + J
     ax[0].plot(t, x1, 'g', label='Sygnał sinusoidalny o częstotliwości 50 [Hz]', )
     ax[0].text(-0.12, 0.5, s='a)', transform=ax[0].transAxes, va='top', ha='right')
     ax[0].legend(loc='upper right')
     ax[0].set_ylabel("Amplituda")
     ax[0].set_xlabel("Czas [s]")
-    ax[0].set_ylim(-1.5, 2)
+    # ax[0].set_ylim(-1.5, 2)
     ax[0].grid()
 
     ax[1].plot(t, x1, 'g', label='Sygnał sinusoidalny o częstotliwości 50 [Hz]')
@@ -52,7 +53,7 @@ def plot_quantization():
     ax[1].set_xlabel("Czas [s]")
     ax[1].set_ylabel("Amplituda")
     ax[1].legend(loc='upper right')
-    ax[1].set_ylim(-1.5, 2)
+    # ax[1].set_ylim(-1.5, 2)
     ax[1].grid()
 
     plt.show()
@@ -224,10 +225,11 @@ def window_functions():
     letters = ['a)', 'b)', 'c)', 'd)', 'e)', 'f)', 'g)']
 
     for i, ax in enumerate(axs):
+        ax.set_ylabel("Amplituda")
         ax.set_xlabel("Czas [s]")
         if i == 0:
-            ax.text(-0.07, 0.5, s=letters[i], transform=ax.transAxes, va='top', ha='right')
-        ax.text(-0.15, 0.5, s=letters[i], transform=ax.transAxes, va='top', ha='right')
+            ax.text(-0.10, 0.5, s=letters[i], transform=ax.transAxes, va='top', ha='right')
+        ax.text(-0.22, 0.5, s=letters[i], transform=ax.transAxes, va='top', ha='right')
 
     # plt.tight_layout()
     plt.subplots_adjust(left=0.1,
@@ -259,29 +261,36 @@ def overlapping():
     filter2 = np.concatenate((zeros, zeros, ones, zeros), axis=None)
     filter3 = np.concatenate((zeros, zeros, zeros, ones), axis=None)
 
-    fig, ax = plt.subplots(4, 1, figsize=(10, 8))
+    fig, ax = plt.subplots(4, 1, figsize=(10, 10))
 
     # ax[0].text(-0.12, 0.5, s='a)', transform=ax[0].transAxes, va='top', ha='right')
     # ax[0].legend(loc='upper right')
     # ax[0].set_ylabel("Amplituda")
     ax[0].plot(x_scale, audio_data)
     ax[0].set_xlabel("Czas [s]")
+    ax[0].set_ylabel("Amplituda")
     ax[0].set_ylim(-1, 1)
     ax[0].grid()
 
     ax[1].plot(x_scale, np.multiply(audio_data, filter1))
     ax[1].plot(x_scale, filter1, 'r')
     ax[1].set_xlabel("Czas [s]")
+    ax[1].set_ylabel("Amplituda")
+    # ax[1].set_ylim(-1, 1)
     ax[1].grid()
 
     ax[2].plot(x_scale, np.multiply(audio_data, filter2))
     ax[2].plot(x_scale, filter2, 'r')
     ax[2].set_xlabel("Czas [s]")
+    ax[2].set_ylabel("Amplituda")
+    # ax[2].set_ylim(-1, 1)
     ax[2].grid()
 
     ax[3].plot(x_scale, np.multiply(audio_data, filter3))
     ax[3].plot(x_scale, filter3, 'r')
     ax[3].set_xlabel("Czas [s]")
+    ax[3].set_ylabel("Amplituda")
+    # ax[3].set_ylim(-1, 1)
     ax[3].grid()
 
     plt.tight_layout()
@@ -301,22 +310,27 @@ def overlapping():
     hop_size1 = np.linspace(1, 1.5, int(sr / 2))
     hop_size2 = np.linspace(1.5, 2, int(sr / 2))
 
-    fig, ax = plt.subplots(4, 1, figsize=(10, 8))
+    fig, ax = plt.subplots(4, 1, figsize=(10, 10))
 
     ax[0].plot(x_scale, audio_data)
     ax[0].set_xlabel("Czas [s]")
+    ax[0].set_ylabel("Amplituda")
     ax[0].set_ylim(-1, 1)
     ax[0].grid()
 
     ax[1].plot(x_scale, np.multiply(audio_data, filter1))
     ax[1].plot(x_scale, filter1, 'r')
     ax[1].set_xlabel("Czas [s]")
+    ax[1].set_ylabel("Amplituda")
+    # ax[1].set_ylim(-1, 1)
     ax[1].grid()
 
     ax[2].plot(x_scale, np.multiply(audio_data, filter2))
     ax[2].plot(x_scale, filter2, 'r')
     ax[2].plot(hop_size1, np.ones(int(sr / 2)) / 2, 'k')
     ax[2].set_xlabel("Czas [s]")
+    ax[2].set_ylabel("Amplituda")
+    # ax[2].set_ylim(-1, 1)
     ax[2].grid()
 
     ax[2].annotate('długość skoku', xy=(0.95, 0.5), xytext=(0.25, 0.25),
@@ -327,6 +341,8 @@ def overlapping():
     ax[3].plot(x_scale, filter3, 'r')
     ax[3].plot(hop_size2, np.ones(int(sr / 2)) / 2, 'k')
     ax[3].set_xlabel("Czas [s]")
+    ax[3].set_ylabel("Amplituda")
+    # ax[3].set_ylim(-1, 1)
     ax[3].grid()
 
     ax[3].annotate('długość skoku', xy=(1.45, 0.5), xytext=(0.75, 0.25),
@@ -348,13 +364,14 @@ def fourier():
     _, y2 = generate_sine_wave(FREQUENCY_2, SAMPLE_RATE, DURATION, amplitude=0.5)
     _, y3 = generate_sine_wave(FREQUENCY_3, SAMPLE_RATE, DURATION, amplitude=0.25)
 
+    y = y1 + y2 + y3
     N = SAMPLE_RATE * DURATION
 
     yf = rfft(y1 + y2 + y3)
     xf = rfftfreq(N, 1 / SAMPLE_RATE)
     fig, ax = plt.subplots(2, 1, figsize=(10, 8))
 
-    ax[0].plot(x1, y1 + y2 + y3, 'g', label='sin(5Hz)+$\\frac{1}{2}$sin(20Hz)+$\\frac{1}{4}$sin(50Hz)')
+    ax[0].plot(x1, y, 'g', label='sin(5Hz)+$\\frac{1}{2}$sin(20Hz)+$\\frac{1}{4}$sin(50Hz)')
     ax[0].text(-0.12, 0.5, s='a)', transform=ax[0].transAxes, va='top', ha='right')
     ax[0].legend(loc='upper right')
     ax[0].set_xlabel("Czas [s]")
@@ -719,6 +736,7 @@ def plot_accuracy():
     for i in range(len(piano_ac)):
         print(window_sizes[i], " & ", piano_ac[i], " \\")
 
+
 if __name__ == "__main__":
     # plot_quantization()
     # plot_aliasing()
@@ -728,8 +746,10 @@ if __name__ == "__main__":
     # fourier()
     # spectrogram()
     # plot_harmonics()
-    plot_spectral_flux()
+    # plot_spectral_flux()
     # plot_f0_detection_steps()
     # plot_cepstrum()
     # high_pass()
     # plot_accuracy()
+    pass
+
