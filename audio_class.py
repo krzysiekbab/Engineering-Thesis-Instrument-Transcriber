@@ -78,7 +78,6 @@ class Audio:
                 removed_indexes.append(i)
         new_onsets = librosa.frames_to_samples(new_onsets, hop_length=self.hop_size)
         final_onsets = np.delete(new_onsets, removed_indexes)
-        # TODO: Above for loop unused.
         self.onsets = new_onsets
 
     def detect_onsets(self, units='samples', aggregate=np.median):
@@ -193,7 +192,6 @@ class Audio:
         plt.figure()
         librosa.display.waveshow(self.audio_data, alpha=0.5, sr=self.sample_rate)
         plt.title(f"Wave plot of {self.audio_path}")
-        # plt.ylabel('Amplituda')
         plt.show()
 
     def plot_magnitude_spectrum(self, f_ratio=0.1):

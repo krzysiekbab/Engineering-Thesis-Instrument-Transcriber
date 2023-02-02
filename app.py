@@ -1,7 +1,5 @@
 import tkinter as tk
-from PIL import Image, ImageTk
-from tkinter import filedialog
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import matplotlib.pyplot as plt
 import pygame
 import librosa.display
 import os
@@ -12,6 +10,10 @@ import tkinter.ttk as ttk
 import threading
 import pyaudio
 import wave
+from PIL import Image, ImageTk
+from tkinter import filedialog
+from matplotlib import collections
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from datetime import datetime
 from audio_class import Audio
 
@@ -248,8 +250,6 @@ def run_application(audio_path, audio_name):
     # ESTIMATE TEMPO
     tempo = audio_file.estimate_tempo()
     tempo = float(tempo)
-    # if audio_name == 'Autumn leaves - saksofon' or audio_name == 'Autumn leaves - pianino':
-    #     tempo = 150
 
     # DIVIDE SIGNAL INTO FRAMES FROM ONSET TO ONSET;
     onset_frames = audio_file.divide_into_onset_frames()
@@ -270,7 +270,8 @@ def run_application(audio_path, audio_name):
 
     # CREATE LENGTH ARRAYS IN SAMPLE AND TIME UNITS
     note_duration_samples, _, notes_duration_times, silences_duration_times = create_duration_tables(notes_duration_idx,
-                                                                                                     rests_duration_idx)
+                                                                                                     rests_duration_idx,
+                                                                                                     sr=SAMPLE_RATE)
     # SCALING LENGTHS BY TEMPO
     new_notes_duration_times = []
     for note_time in notes_duration_times:
@@ -374,7 +375,6 @@ def stop_song():
 
 def slide(x):
     global song_length
-    # slider_label.config(text=f'{int(my_slider.get())} z {int(song_length)}')
 
 
 def open_musescore():
@@ -385,7 +385,6 @@ def open_musescore():
 def open_pdf():
     global pdf_path
     file = pdf_path + '.pdf'
-    # file = saving_path
     subprocess.Popen([file], shell=True)
 
 
@@ -556,7 +555,7 @@ if __name__ == "__main__":
 
 
     class Page:
-        def __init__(self, window, top_frame, mid_frame, bot_frame):
+        def __init__(self, top_frame, mid_frame, bot_frame):
             self.top_frame = top_frame
             self.mid_frame = mid_frame
             self.bot_frame = bot_frame
@@ -665,9 +664,6 @@ if __name__ == "__main__":
                                                      show_wave_plot(path),
                                                      show_detailed_plots(),
                                                      switch_button_state(next_button_page_2)])
-    # command=lambda: [run_application(path, audio_name),
-    #                  show_wave_plot(path),
-    #                  switch_button_state(next_button_page_2)])
     settings_frame = tk.Frame(mid_page_2, borderwidth=4, background='#FFFFFF', relief="groove")
 
     shortest_note_label = tk.Label(mid_page_2, text="shortest_note:", font=label_font_2,
@@ -779,17 +775,12 @@ if __name__ == "__main__":
                           style="TScale")
     my_slider.place(x=90, y=350, height=30)
 
-    # temporary slider label
-    # slider_label = tk.Label(mid_page_3, text="0")
-    # slider_label.place(x=824, y=400, width=150, height=60)
-
     show_pdf = tk.Button(mid_page_3, text="Pokaż nuty (pdf)", font=label_font, compound="left", cursor="hand2",
                          command=lambda: [open_pdf()])
     show_musescore = tk.Button(mid_page_3, text="Pokaż nuty (Musescore)", font=label_font, compound="left",
                                cursor="hand2", command=lambda: [open_musescore()])
     generate_midi = tk.Button(mid_page_3, text="Generuj midi", font=label_font, cursor="hand2", command=create_midi)
-    # show_pdf.place(x=50, y=480, width=437, height=60)
-    # show_musescore.place(x=537, y=480, width=437, height=60)
+
     show_pdf.place(x=90, y=486, width=400, height=60)
     show_musescore.place(x=534, y=486, width=400, height=60)
     generate_midi.place(x=312, y=572, width=400, height=60)
@@ -807,7 +798,6 @@ if __name__ == "__main__":
     # bottom_page_3.pack(fill="x", expand=True)
     # ----------------------------------------------------------------------------------------------------------------
     mid_page_4 = tk.Frame(root, width=1024, height=658, background='#FFFFFF')
-
     # mid_page_4.pack(fill="x")
     # ----------------------------------------------------------------------------------------------------------------
 
@@ -817,7 +807,4 @@ if __name__ == "__main__":
                                      width=1024, cursor="hand2", command=move_previous_page)
 
     cancel_button_page_4.place(x=0, y=0, width=1024, height=60)
-
-    # bottom_frame_4.pack(fill="x", expand=True)
-    # root.focus()
     root.mainloop()

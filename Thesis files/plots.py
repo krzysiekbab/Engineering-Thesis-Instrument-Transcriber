@@ -1,15 +1,15 @@
-import matplotlib.pyplot as plt  # to plot
+import matplotlib.pyplot as plt
 import numpy as np
-from scipy.fft import fft, fftfreq, rfft, rfftfreq
+from scipy.fft import fft, rfft, rfftfreq
 from scipy import signal
-import wave
 import scipy as sp
 import os
 
 import librosa
 import librosa.display
-import matplotlib.collections as collections
-from constants import SAMPLE_RATE, FREQUENCY_RANGE
+
+SAMPLE_RATE = 44100
+FREQUENCY_RANGE = (50, 2500)
 
 
 def generate_sine_wave(freq, sample_rate, duration, amplitude=1, phase=0):
@@ -35,7 +35,6 @@ def plot_quantization():
     x2 = np.sin(2 * np.pi * f * nT)  # Since for sampling t = nT.
 
     fig, ax = plt.subplots(2, 1, figsize=(10, 8))
-
 
     # ALT + J
     ax[0].plot(t, x1, 'g', label='Sygnał sinusoidalny o częstotliwości 50 [Hz]', )
@@ -752,4 +751,3 @@ if __name__ == "__main__":
     # high_pass()
     # plot_accuracy()
     pass
-

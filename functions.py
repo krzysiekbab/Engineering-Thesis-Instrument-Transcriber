@@ -1,10 +1,6 @@
 import numpy as np
 import librosa
 import librosa.display
-import matplotlib.pyplot as plt
-from playsound import playsound
-from constants import *
-import matplotlib.collections as collections
 import music21
 
 
@@ -12,14 +8,13 @@ def change_from_frequency_to_music_notation(frequencies):
     found_notes = []
     for freq in frequencies:
         found_note = librosa.hz_to_note(freq)
-        # Check if is any "♯"
         if len(found_note) == 3:
             found_note = found_note.replace("♯", "#")
         found_notes.append(found_note)
     return found_notes
 
 
-def create_duration_tables(notes_duration_idx, silences_duration_idx):
+def create_duration_tables(notes_duration_idx, silences_duration_idx, sr):
     note_duration_samples = []
     silence_duration_samples = []
     note_duration_times = []
@@ -28,12 +23,12 @@ def create_duration_tables(notes_duration_idx, silences_duration_idx):
         first_idx, second_idx = notes_duration_idx[i][0], notes_duration_idx[i][1]
         note_length_time = second_idx - first_idx
         note_duration_samples.append(note_length_time)
-        note_duration_times.append(librosa.samples_to_time(note_length_time, sr=SAMPLE_RATE))
+        note_duration_times.append(librosa.samples_to_time(note_length_time, sr=sr))
 
         first_idx, second_idx = silences_duration_idx[i][0], silences_duration_idx[i][1]
         silence_duration_time = second_idx - first_idx
         silence_duration_samples.append(silence_duration_time)
-        silence_duration_times.append(librosa.samples_to_time(silence_duration_time, sr=SAMPLE_RATE))
+        silence_duration_times.append(librosa.samples_to_time(silence_duration_time, sr=sr))
 
     # Changing type from list to an array
     note_duration_samples = np.array(note_duration_samples)
@@ -64,18 +59,13 @@ def change_to_music21_format(duration_times, shortest_note='1/8'):
     len_diff = 0
     for elem in duration_times:
         first_part, second_part = str(elem[1]).split(".")
-        # print(first_part)
         first_part = float(first_part)
         second_part = "0." + second_part
         old_second_part = float(second_part)
         second_part = float(second_part) + len_diff
-        # print(f"second_part: {second_part}")
         index = np.abs(note_lengths - second_part).argmin()
         len_diff = second_part - note_lengths[index]
-        # print(
-        #     f"duration time: {elem:.5f}, second part: {old_second_part}, second part + diff: {second_part:.5f}, diff: {previous_diff:.5f}")
-        second_part = note_lengths[index]  # ucinam "0." lub "1.0"
-        # print(f"second_part: {second_part}\n")
+        second_part = note_lengths[index]
         music21_duration = first_part + second_part
         if music21_duration > 0:
             duration_times_music21.append(tuple([elem[0], music21_duration]))
@@ -97,35 +87,3 @@ def create_notes_and_rests(music_notes, stream):
 
 def time_to_beat(duration, tempo):
     return tempo * duration / 60
-
-
-def record_audio():
-    pass
-
-
-# tempo = librosa.beat.tempo(onset_envelope=onset_env, sr=SAMPLE_RATE)
-# print(f"Tempo: {tempo}")
-# def time_to_beat(duration, tempo):
-#     return (tempo * duration / 60)
-
-
-# first_frame = audio_file.audio_data[:onsets[0] - 1] - FIRST FRAME OF SILENCE
-
-# print(f"Liczba wykrytych onsetów: {len(onsets)}")
-# print(f"Liczba ramek onset_frames: {len(onset_frames)} (równa liczba onsetów)")
-# print(f"Liczba indeksów:{len(indexes)} (dodany indeks początkowy i końcowy)\n")
-
-# Printing results
-# for i in range(len(found_frequencies)):
-#     print(f"Frame [{i:2}], Found frequency: {found_frequencies[i]:.3f} [Hz] is equal to {found_notes[i]}")
-
-# SHOWING RANGES OF SOUNDS
-# for i in range(len(onset_frames)):
-#     print(
-#         f"Ramka[{i}]: ({indexes[i + 1]}:{indexes[i + 2]}),"
-#         f"\tPoczątek dźwięku: {onsets[i]},"
-#         f"\tDługość dźwięku: {notes_duration_idx[i]},"
-#         f"\tDługość ciszy: {silences_duration_idx[i]}")
-
-if __name__ == "__main__":
-    pass
