@@ -19,3 +19,8 @@ As a result, application generates a file in pdf format containing the score of 
 
 ## Installing steps
 
+To successfully run the application follow these steps:
+1. Install packages from requirements.txt file
+'''
+pip install -r requirements.txt
+'''
