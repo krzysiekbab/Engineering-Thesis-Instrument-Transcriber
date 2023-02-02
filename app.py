@@ -4,7 +4,7 @@ import pygame
 import librosa.display
 import os
 import subprocess
-from functions import *
+from note_functions import *
 import time
 import tkinter.ttk as ttk
 import threading
@@ -514,19 +514,19 @@ if __name__ == "__main__":
 
     label_font = ("Helvetica", "20")
     label_font_2 = ("Helvetica", "16")
-    img_AGH = ImageTk.PhotoImage(Image.open('GUI/images/logoAGH.png').resize((40, 40)))
-    img_sax = ImageTk.PhotoImage(Image.open('GUI/images/saxophone.png').resize((40, 40)))
-    file_img = ImageTk.PhotoImage(Image.open('GUI/images/folder.png').resize((40, 40)))
-    microphone_img = ImageTk.PhotoImage(Image.open('GUI/images/microphone.png').resize((40, 40)))
-    quit_img = ImageTk.PhotoImage(Image.open('GUI/images/exit.png').resize((40, 40)))
-    next_img = ImageTk.PhotoImage(Image.open('GUI/images/next.png').resize((40, 40)))
-    cancel_img = ImageTk.PhotoImage(Image.open('GUI/images/back.png').resize((40, 40)))
-    save_img = ImageTk.PhotoImage(Image.open('GUI/images/save.png').resize((40, 40)))
-    graph_img = ImageTk.PhotoImage(Image.open('GUI/images/graph.png').resize((40, 40)))
-    play_img = ImageTk.PhotoImage(Image.open('GUI/images/play.png').resize((55, 55)))
-    pause_img = ImageTk.PhotoImage(Image.open('GUI/images/pause.png').resize((55, 55)))
-    stop_img = ImageTk.PhotoImage(Image.open('GUI/images/stop.png').resize((55, 55)))
-    stop_recording_img = ImageTk.PhotoImage(Image.open('GUI/images/stop_recording.png').resize((40, 40)))
+    img_AGH = ImageTk.PhotoImage(Image.open('GUI/logoAGH.png').resize((40, 40)))
+    img_sax = ImageTk.PhotoImage(Image.open('GUI/saxophone.png').resize((40, 40)))
+    file_img = ImageTk.PhotoImage(Image.open('GUI/folder.png').resize((40, 40)))
+    microphone_img = ImageTk.PhotoImage(Image.open('GUI/microphone.png').resize((40, 40)))
+    quit_img = ImageTk.PhotoImage(Image.open('GUI/exit.png').resize((40, 40)))
+    next_img = ImageTk.PhotoImage(Image.open('GUI/next.png').resize((40, 40)))
+    cancel_img = ImageTk.PhotoImage(Image.open('GUI/back.png').resize((40, 40)))
+    save_img = ImageTk.PhotoImage(Image.open('GUI/save.png').resize((40, 40)))
+    graph_img = ImageTk.PhotoImage(Image.open('GUI/graph.png').resize((40, 40)))
+    play_img = ImageTk.PhotoImage(Image.open('GUI/play.png').resize((55, 55)))
+    pause_img = ImageTk.PhotoImage(Image.open('GUI/pause.png').resize((55, 55)))
+    stop_img = ImageTk.PhotoImage(Image.open('GUI/stop.png').resize((55, 55)))
+    stop_recording_img = ImageTk.PhotoImage(Image.open('GUI/stop_recording.png').resize((40, 40)))
 
 
     class TopFrame:
