@@ -10,7 +10,7 @@ To detect f0 frequencies of detected notes I used method called spectral analysi
 
 ## Algorithm steps
 
-![Alt text](/posts/path/to/img.jpg "Optional title")
+![Alt text](https://github.com/krzysiekbab/Engineering-Thesis-Instrument-Transcriber/blob/master/Thesis%20files/Images/algorithm%20steps%20english.png)
 
 ## Created interface
 
