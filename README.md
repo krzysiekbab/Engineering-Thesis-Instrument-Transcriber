@@ -24,9 +24,11 @@ GUI interface consists of 4 main windows.
   <img src="https://github.com/krzysiekbab/Engineering-Thesis-Instrument-Transcriber/blob/master/Thesis%20files/Images/win4.png" width="400" height="320" />
 </p>
 
-## Run Tests
+## Performed tests
 
-### Test I - 
+### Test I - Checking the impact of window size parameter on the accuracy of cepstral analysis method.
+
+### Test II - Testing application on jazz standard Autumn Leaves played on saxophone and piano.
 
 ## Used Python libraries
 
