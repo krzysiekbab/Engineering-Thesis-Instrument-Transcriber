@@ -9,15 +9,24 @@ As a result, application generates a file in pdf format containing the score of 
 To detect f0 frequencies of detected notes I used method called spectral analysis
 
 ## Algorithm steps
-
-![Alt text](https://github.com/krzysiekbab/Engineering-Thesis-Instrument-Transcriber/blob/master/Thesis%20files/Images/algorithm%20steps%20english.png)
+<p align="middle">
+  <img src="https://github.com/krzysiekbab/Engineering-Thesis-Instrument-Transcriber/blob/master/Thesis%20files/Images/algorithm%20steps%20english.png" width="738"   height="300"/>
+</p>
 
 ## Created interface
 
 GUI interface consists of 4 main windows. 
 
-### Window 1
-Enables 
+<p float="left">
+  <img src="https://github.com/krzysiekbab/Engineering-Thesis-Instrument-Transcriber/blob/master/Thesis%20files/Images/win1.png" width="500" height="380" />
+  <img src="https://github.com/krzysiekbab/Engineering-Thesis-Instrument-Transcriber/blob/master/Thesis%20files/Images/win2.png" width="500" height="380" />
+  <img src="https://github.com/krzysiekbab/Engineering-Thesis-Instrument-Transcriber/blob/master/Thesis%20files/Images/win3.png" width="500" height="380" />
+  <img src="https://github.com/krzysiekbab/Engineering-Thesis-Instrument-Transcriber/blob/master/Thesis%20files/Images/win4.png" width="500" height="380" />
+</p>
+
+## Run Tests
+
+### Test I - 
 
 ## Used Python libraries
 
