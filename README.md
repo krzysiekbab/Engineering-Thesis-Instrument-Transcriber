@@ -18,8 +18,8 @@ To detect f0 frequencies of detected notes I used method called spectral analysi
 GUI interface consists of 4 main windows. 
 
 <p float="left">
-  <img src="https://github.com/krzysiekbab/Engineering-Thesis-Instrument-Transcriber/blob/master/Thesis%20files/Images/win1.png" width="500" height="380" />
-  <img src="https://github.com/krzysiekbab/Engineering-Thesis-Instrument-Transcriber/blob/master/Thesis%20files/Images/win2.png" width="500" height="380" />
+  <img src="https://github.com/krzysiekbab/Engineering-Thesis-Instrument-Transcriber/blob/master/Thesis%20files/Images/win1.png" width="400" height="320" />
+  <img src="https://github.com/krzysiekbab/Engineering-Thesis-Instrument-Transcriber/blob/master/Thesis%20files/Images/win2.png" width="400" height="320" />
   <img src="https://github.com/krzysiekbab/Engineering-Thesis-Instrument-Transcriber/blob/master/Thesis%20files/Images/win3.png" width="500" height="380" />
   <img src="https://github.com/krzysiekbab/Engineering-Thesis-Instrument-Transcriber/blob/master/Thesis%20files/Images/win4.png" width="500" height="380" />
 </p>
