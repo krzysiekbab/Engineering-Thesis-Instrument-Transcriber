@@ -32,10 +32,10 @@ GUI interface consists of 4 main windows.
 </p>
 
 ### Test II - Testing application on jazz standard Autumn Leaves.
-Test performed on recorded tracks on piano and saxophone. First sheet music template was created and after that both soundtracks were recorded. Below are shown results of the application in sheetmusic for saxophone (added mistakes with color rectangles).
+Test performed on recorded tracks on piano and saxophone. First sheet music template was created and after that both soundtracks were recorded. Finally accuracy was measured after comparison of template and result score. Below are shown results of the application in sheetmusic for saxophone.
 
 <p align="middle">
-<img src="https://github.com/krzysiekbab/Engineering-Thesis-Instrument-Transcriber/blob/master/Thesis%20files/Images/f0_accuracy.png" width="520" height="390"/>
+<img src="https://github.com/krzysiekbab/Engineering-Thesis-Instrument-Transcriber/blob/master/Thesis%20files/Images/Autumn%20leaves%20-%20sax%20b%C5%82edy.png" width="615" height="450"/>
 </p>
 
 ## Used Python libraries
