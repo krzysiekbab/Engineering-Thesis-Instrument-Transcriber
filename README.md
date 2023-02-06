@@ -9,15 +9,34 @@ As a result, application generates a file in pdf format containing the score of 
 To detect f0 frequencies of detected notes I used method called spectral analysis
 
 ## Algorithm steps
-
-![Alt text](https://github.com/krzysiekbab/Engineering-Thesis-Instrument-Transcriber/blob/master/Thesis%20files/Images/algorithm%20steps%20english.png)
+<p align="middle">
+  <img src="https://github.com/krzysiekbab/Engineering-Thesis-Instrument-Transcriber/blob/master/Thesis%20files/Images/algorithm%20steps%20english.png" width="738"   height="300"/>
+</p>
 
 ## Created interface
 
 GUI interface consists of 4 main windows. 
 
-### Window 1
-Enables 
+<p float="left">
+  <img src="https://github.com/krzysiekbab/Engineering-Thesis-Instrument-Transcriber/blob/master/Thesis%20files/Images/win1.png" width="400" height="320" />
+  <img src="https://github.com/krzysiekbab/Engineering-Thesis-Instrument-Transcriber/blob/master/Thesis%20files/Images/win2.png" width="400" height="320" />
+  <img src="https://github.com/krzysiekbab/Engineering-Thesis-Instrument-Transcriber/blob/master/Thesis%20files/Images/win3.png" width="400" height="320" />
+  <img src="https://github.com/krzysiekbab/Engineering-Thesis-Instrument-Transcriber/blob/master/Thesis%20files/Images/win4.png" width="400" height="320" />
+</p>
+
+## Performed tests
+
+### Test I - Checking the impact of window size parameter on the accuracy of cepstral analysis method.
+<p align="middle">
+<img src="https://github.com/krzysiekbab/Engineering-Thesis-Instrument-Transcriber/blob/master/Thesis%20files/Images/f0_accuracy.png" width="520" height="390"/>
+</p>
+
+### Test II - Testing application on jazz standard Autumn Leaves.
+Test performed on recorded tracks on piano and saxophone. First sheet music template was created and after that both soundtracks were recorded. Below are shown results of the application in sheetmusic for saxophone (added mistakes with color rectangles).
+
+<p align="middle">
+<img src="https://github.com/krzysiekbab/Engineering-Thesis-Instrument-Transcriber/blob/master/Thesis%20files/Images/f0_accuracy.png" width="520" height="390"/>
+</p>
 
 ## Used Python libraries
 
