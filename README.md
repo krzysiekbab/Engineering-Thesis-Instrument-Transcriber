@@ -27,8 +27,16 @@ GUI interface consists of 4 main windows.
 ## Performed tests
 
 ### Test I - Checking the impact of window size parameter on the accuracy of cepstral analysis method.
+<p align="middle">
+<img src="https://github.com/krzysiekbab/Engineering-Thesis-Instrument-Transcriber/blob/master/Thesis%20files/Images/f0_accuracy.png" width="520" height="390"/>
+</p>
 
-### Test II - Testing application on jazz standard Autumn Leaves played on saxophone and piano.
+### Test II - Testing application on jazz standard Autumn Leaves.
+Test performed on recorded tracks on piano and saxophone. First sheet music template was created and after that both soundtracks were recorded. Below are shown results of the application in sheetmusic for saxophone (added mistakes with color rectangles).
+
+<p align="middle">
+<img src="https://github.com/krzysiekbab/Engineering-Thesis-Instrument-Transcriber/blob/master/Thesis%20files/Images/f0_accuracy.png" width="520" height="390"/>
+</p>
 
 ## Used Python libraries
 
